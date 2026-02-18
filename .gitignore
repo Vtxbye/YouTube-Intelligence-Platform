@@ -205,3 +205,45 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# For nextjs app
+
+# dependencies
+yt-app/node_modules
+yt-app/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+yt-app/coverage
+
+# next.js
+yt-app/.next/
+yt-app/out/
+
+# production
+yt-app/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
