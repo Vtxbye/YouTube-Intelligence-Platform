@@ -1,29 +1,48 @@
 import os
-import datetime
+import json
+from pathlib import Path
+from datetime import datetime, timedelta, UTC
+from dotenv import load_dotenv, find_dotenv
 from googleapiclient.discovery import build
 
-# ---------------------------------------------------------
-# CONFIGURATION
-# ---------------------------------------------------------
+load_dotenv(find_dotenv())
+API_KEY = os.getenv("YT_DATA_API_KEY")
 
-# Add channel IDs here
-CHANNEL_IDS = [
-    "UC_x5XG1OV2P6uZZ5FSM9Ttw",  
+CHANNEL_HANDLES = [
+    "@theanatomylab",
+    "@RenaissancePeriodization",
+    "@drekberg",
+    "@DrTraceyMarks",
+    "@HealthyGamerGG",
+    "@Psych2go",
+    "@TherapyinaNutshell",
 ]
 
-# Number of months to look back
-MONTHS_BACK = 6
-
-# ---------------------------------------------------------
-# SETUP
-# ---------------------------------------------------------
+WITHIN_MONTHS = 6
+MIN_VIEWS = 5000
 
 youtube = build("youtube", "v3", developerKey=API_KEY)
 
+def handle_to_channel_id(handle):
+    query = handle[1:] if handle.startswith("@") else handle
+
+    response = youtube.search().list(
+        part="snippet",
+        q=query,
+        type="channel",
+        maxResults=1
+    ).execute()
+
+    items = response.get("items", [])
+    if not items:
+        return None
+
+    return items[0]["snippet"]["channelId"]
+
 def get_uploads_playlist_id(channel_id):
-    """Fetch the Uploads playlist ID for a given channel."""
+    """Fetch uploads playlist + channel name."""
     response = youtube.channels().list(
-        part="contentDetails",
+        part="snippet,contentDetails",
         id=channel_id
     ).execute()
 
@@ -31,11 +50,13 @@ def get_uploads_playlist_id(channel_id):
     if not items:
         return None
 
-    return items[0]["contentDetails"]["relatedPlaylists"]["uploads"]
+    snippet = items[0]["snippet"]
+    uploads = items[0]["contentDetails"]["relatedPlaylists"]["uploads"]
 
+    return uploads, snippet["title"]
 
 def get_recent_videos_from_playlist(playlist_id, published_after):
-    """Fetch videos from a playlist uploaded after a specific date."""
+    """Fetch recent videos from uploads playlist."""
     videos = []
     next_page = None
 
@@ -48,12 +69,13 @@ def get_recent_videos_from_playlist(playlist_id, published_after):
         ).execute()
 
         for item in response.get("items", []):
-            video_date = item["contentDetails"]["videoPublishedAt"]
-            if video_date >= published_after:
+            published = item["contentDetails"]["videoPublishedAt"]
+            if published >= published_after:
                 videos.append({
                     "title": item["snippet"]["title"],
                     "videoId": item["contentDetails"]["videoId"],
-                    "publishedAt": video_date
+                    "publishedAt": published,
+                    "channelName": item["snippet"]["channelTitle"]
                 })
 
         next_page = response.get("nextPageToken")
@@ -62,33 +84,60 @@ def get_recent_videos_from_playlist(playlist_id, published_after):
 
     return videos
 
+def get_video_stats(video_id):
+    """Fetch view count for a video."""
+    response = youtube.videos().list(
+        part="statistics",
+        id=video_id
+    ).execute()
+
+    items = response.get("items", [])
+    if not items:
+        return None
+
+    stats = items[0]["statistics"]
+    return int(stats.get("viewCount", 0))
 
 def main():
-    # Calculate date threshold
-    today = datetime.datetime.utcnow()
-    cutoff_date = today - datetime.timedelta(days=MONTHS_BACK * 30)
+    CHANNEL_IDS = []
+    for handle in CHANNEL_HANDLES:
+        cid = handle_to_channel_id(handle)
+        if cid is not None:
+            CHANNEL_IDS.append(cid)
+
+    today = datetime.now(UTC)
+    cutoff_date = today - timedelta(days=WITHIN_MONTHS * 30)
     cutoff_iso = cutoff_date.isoformat("T") + "Z"
 
     all_results = []
 
     for channel_id in CHANNEL_IDS:
-        print(f"\nChecking channel: {channel_id}")
-
-        playlist_id = get_uploads_playlist_id(channel_id)
-        if not playlist_id:
-            print("  Could not retrieve uploads playlist.")
+        playlist_info = get_uploads_playlist_id(channel_id)
+        if not playlist_info:
             continue
 
+        playlist_id, channel_name = playlist_info
         videos = get_recent_videos_from_playlist(playlist_id, cutoff_iso)
 
-        print(f"  Found {len(videos)} videos in last {MONTHS_BACK} months.")
-        all_results.extend(videos)
-
         for v in videos:
-            print(f"    - {v['title']} ({v['publishedAt']}) https://youtu.be/{v['videoId']}")
+            views = get_video_stats(v["videoId"])
+            if views is None or views < MIN_VIEWS:
+                continue
 
-    print("\nDone.")
+            v["views"] = views
+            v["url"] = f"https://www.youtube.com/watch?v={v['videoId']}"
+            v["channelName"] = channel_name
+            all_results.append(v)
 
+    script_dir = Path(__file__).resolve().parent
+    output_dir = script_dir.parent / "data"
+    output_dir.mkdir(exist_ok=True)
+    output_file = output_dir / "recent_videos.json"
+
+    with open(output_file, "w", encoding="utf-8") as f:
+        json.dump(all_results, f, indent=4)
+
+    print(f"\nSaved {len(all_results)} videos to {output_file}")
 
 if __name__ == "__main__":
     main()
