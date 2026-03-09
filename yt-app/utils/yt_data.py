@@ -1,21 +1,23 @@
 import os
 import json
+import re
 from pathlib import Path
 from datetime import datetime, timedelta, UTC
 from dotenv import load_dotenv, find_dotenv
 from googleapiclient.discovery import build
+from transcript import get_transcript
 
 load_dotenv(find_dotenv())
 API_KEY = os.getenv("YT_DATA_API_KEY")
 
 CHANNEL_HANDLES = [
-    "@theanatomylab",
-    "@RenaissancePeriodization",
-    "@drekberg",
-    "@DrTraceyMarks",
-    "@HealthyGamerGG",
-    "@Psych2go",
-    "@TherapyinaNutshell",
+  "@theanatomylab",
+  # "@RenaissancePeriodization",
+  # "@drekberg",
+  # "@DrTraceyMarks",
+  # "@HealthyGamerGG",
+  # "@Psych2go",
+  # "@TherapyinaNutshell",
 ]
 
 WITHIN_MONTHS = 6
@@ -24,120 +26,151 @@ MIN_VIEWS = 5000
 youtube = build("youtube", "v3", developerKey=API_KEY)
 
 def handle_to_channel_id(handle):
-    query = handle[1:] if handle.startswith("@") else handle
+  query = handle[1:] if handle.startswith("@") else handle
 
-    response = youtube.search().list(
-        part="snippet",
-        q=query,
-        type="channel",
-        maxResults=1
-    ).execute()
+  response = youtube.search().list(
+    part="snippet",
+    q=query,
+    type="channel",
+    maxResults=1
+  ).execute()
 
-    items = response.get("items", [])
-    if not items:
-        return None
+  items = response.get("items", [])
+  if not items:
+    return None
 
-    return items[0]["snippet"]["channelId"]
+  return items[0]["snippet"]["channelId"]
 
 def get_uploads_playlist_id(channel_id):
-    """Fetch uploads playlist + channel name."""
-    response = youtube.channels().list(
-        part="snippet,contentDetails",
-        id=channel_id
-    ).execute()
+  response = youtube.channels().list(
+    part="snippet,contentDetails",
+    id=channel_id
+  ).execute()
 
-    items = response.get("items", [])
-    if not items:
-        return None
+  items = response.get("items", [])
+  if not items:
+    return None
 
-    snippet = items[0]["snippet"]
-    uploads = items[0]["contentDetails"]["relatedPlaylists"]["uploads"]
+  snippet = items[0]["snippet"]
+  uploads = items[0]["contentDetails"]["relatedPlaylists"]["uploads"]
 
-    return uploads, snippet["title"]
+  return uploads, snippet["title"]
 
 def get_recent_videos_from_playlist(playlist_id, published_after):
-    """Fetch recent videos from uploads playlist."""
-    videos = []
-    next_page = None
+  videos = []
+  next_page = None
 
-    while True:
-        response = youtube.playlistItems().list(
-            part="snippet,contentDetails",
-            playlistId=playlist_id,
-            maxResults=50,
-            pageToken=next_page
-        ).execute()
-
-        for item in response.get("items", []):
-            published = item["contentDetails"]["videoPublishedAt"]
-            if published >= published_after:
-                videos.append({
-                    "title": item["snippet"]["title"],
-                    "videoId": item["contentDetails"]["videoId"],
-                    "publishedAt": published,
-                    "channelName": item["snippet"]["channelTitle"]
-                })
-
-        next_page = response.get("nextPageToken")
-        if not next_page:
-            break
-
-    return videos
-
-def get_video_stats(video_id):
-    """Fetch view count for a video."""
-    response = youtube.videos().list(
-        part="statistics",
-        id=video_id
+  while True:
+    response = youtube.playlistItems().list(
+      part="snippet,contentDetails",
+      playlistId=playlist_id,
+      maxResults=50,
+      pageToken=next_page
     ).execute()
 
-    items = response.get("items", [])
-    if not items:
-        return None
+    for item in response.get("items", []):
+      published = item["contentDetails"]["videoPublishedAt"]
+      if published >= published_after:
+        videos.append({
+          "title": item["snippet"]["title"],
+          "video_id": item["contentDetails"]["videoId"],
+          "published_at": published,
+          "channel_name": item["snippet"]["channelTitle"]
+        })
 
-    stats = items[0]["statistics"]
-    return int(stats.get("viewCount", 0))
+    next_page = response.get("nextPageToken")
+    if not next_page:
+      break
 
-def main():
-    CHANNEL_IDS = []
-    for handle in CHANNEL_HANDLES:
-        cid = handle_to_channel_id(handle)
-        if cid is not None:
-            CHANNEL_IDS.append(cid)
+  return videos
 
-    today = datetime.now(UTC)
-    cutoff_date = today - timedelta(days=WITHIN_MONTHS * 30)
-    cutoff_iso = cutoff_date.isoformat("T") + "Z"
+def duration_converter(duration_iso_8601):
+  if not duration_iso_8601:
+    return None
 
-    all_results = []
+  pattern = re.compile(
+    r'PT'
+    r'(?:(\d+)H)?'
+    r'(?:(\d+)M)?'
+    r'(?:(\d+)S)?'
+  )
 
-    for channel_id in CHANNEL_IDS:
-        playlist_info = get_uploads_playlist_id(channel_id)
-        if not playlist_info:
-            continue
+  match = pattern.match(duration_iso_8601)
+  if not match:
+    return None
 
-        playlist_id, channel_name = playlist_info
-        videos = get_recent_videos_from_playlist(playlist_id, cutoff_iso)
+  hours = int(match.group(1)) if match.group(1) else 0
+  minutes = int(match.group(2)) if match.group(2) else 0
+  seconds = int(match.group(3)) if match.group(3) else 0
 
-        for v in videos:
-            views = get_video_stats(v["videoId"])
-            if views is None or views < MIN_VIEWS:
-                continue
+  return hours * 3600 + minutes * 60 + seconds
 
-            v["views"] = views
-            v["url"] = f"https://www.youtube.com/watch?v={v['videoId']}"
-            v["channelName"] = channel_name
-            all_results.append(v)
+def get_video_stats(video_id):
+  response = youtube.videos().list(
+    part="statistics,contentDetails",
+    id=video_id
+  ).execute()
 
-    script_dir = Path(__file__).resolve().parent
-    output_dir = script_dir.parent / "data"
-    output_dir.mkdir(exist_ok=True)
-    output_file = output_dir / "recent_videos.json"
+  items = response.get("items", [])
+  if not items:
+    return None
 
-    with open(output_file, "w", encoding="utf-8") as f:
-        json.dump(all_results, f, indent=4)
+  stats = items[0]["statistics"]
+  details = items[0]["contentDetails"]
 
-    print(f"\nSaved {len(all_results)} videos to {output_file}")
+  views = int(stats.get("viewCount", 0))
+  duration = details.get("duration") 
+  seconds = duration_converter(duration)
+
+  return {
+    "views": views,
+    "duration_seconds": seconds
+  }
+
+def get_data():
+  CHANNEL_IDS = []
+  for handle in CHANNEL_HANDLES:
+    cid = handle_to_channel_id(handle)
+    if cid is not None:
+      CHANNEL_IDS.append(cid)
+
+  today = datetime.now(UTC)
+  cutoff_date = today - timedelta(days=WITHIN_MONTHS * 30)
+  cutoff_iso = cutoff_date.isoformat("T") + "Z"
+
+  all_results = []
+
+  for channel_id in CHANNEL_IDS:
+    playlist_info = get_uploads_playlist_id(channel_id)
+    if not playlist_info:
+      continue
+
+    playlist_id, _ = playlist_info
+    videos = get_recent_videos_from_playlist(playlist_id, cutoff_iso)
+
+    for v in videos:
+      stats = get_video_stats(v["video_id"])
+      if stats is None or stats["views"] < MIN_VIEWS:
+        continue
+
+      v["views"] = stats["views"]
+      v["duration_seconds"] = stats["duration_seconds"]
+      v["video_url"] = f"https://www.youtube.com/watch?v={v['video_id']}"
+      v["transcript"] = get_transcript(v["video_url"])
+      all_results.append(v)
+
+  return all_results
+
+def print_results(results):
+  script_dir = Path(__file__).resolve().parent
+  output_dir = script_dir.parent / "data"
+  output_dir.mkdir(exist_ok=True)
+  output_file = output_dir / "recent_videos.json"
+
+  with open(output_file, "w", encoding="utf-8") as f:
+    json.dump(results, f, indent=4)
+
+  print(f"\nSaved {len(results)} videos to {output_file}")
 
 if __name__ == "__main__":
-    main()
+  print_results(get_data())
