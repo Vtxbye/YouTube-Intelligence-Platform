@@ -1,7 +1,6 @@
 CREATE TABLE IF NOT EXISTS video_data (
-  id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  video_id VARCHAR(11) PRIMARY KEY,
   title TEXT,
-  video_id VARCHAR(11) UNIQUE,
   published_at TIMESTAMPTZ,
   channel_name TEXT,
   views INTEGER,

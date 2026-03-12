@@ -107,9 +107,12 @@ def count_prunable(path, months_back):
     if not os.path.exists(path): return 0
     cutoff=now() - relativedelta(months=months_back)
     with open(path,"r",newline="",encoding="utf-8") as f:
-        return sum(1 for row in csv.DictReader(f)
-                   if not ts((row.get("published_at") or "").strip()) or
-                      ts((row.get("published_at") or "").strip()) < cutoff)
+      return sum(
+          1
+          for row in csv.DictReader(f)
+          for published in [ts((row.get("published_at") or "").strip())]
+          if published is None or published < cutoff
+      )
 
 # ---------- state ----------
 def load_state(path):

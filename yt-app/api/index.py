@@ -6,7 +6,7 @@ from .database import execute
 
 app = FastAPI()
 
-class VideoDataBase(BaseModel):
+class VideoData(BaseModel):
   title: Optional[str] = None
   video_id: Optional[str] = None
   published_at: Optional[datetime] = None
@@ -16,9 +16,6 @@ class VideoDataBase(BaseModel):
   duration_seconds: Optional[int] = None
   matched_keywords: Optional[str] = None
   transcript: Optional[str] = None
-
-class VideoDataResponse(VideoDataBase):
-  id: int
 
 @app.get("/api/healthchecker")
 def healthchecker():
@@ -32,17 +29,17 @@ def db_check():
   except Exception as e:
     return {"status": "error", "message": f"Database connection failed: {str(e)}"}
 
-@app.get("/videos", response_model=list[VideoDataResponse])
+@app.get("/videos", response_model=list[VideoData])
 def get_all_videos():
   query = "SELECT * FROM video_data;"
   rows = execute(query, fetch_all=True)
   return rows
   
-@app.post("/videos", response_model=VideoDataResponse)
-def create_video(video: VideoDataBase):
+@app.post("/videos", response_model=VideoData)
+def create_video(video: VideoData):
   query = """
     INSERT INTO video_data (
-      title, video_id, published_at, channel_name,
+      video_id, title, published_at, channel_name,
       views, video_url, duration_seconds, matched_keywords, transcript
     )
     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
@@ -50,8 +47,8 @@ def create_video(video: VideoDataBase):
   """
 
   params = (
-    video.title,
     video.video_id,
+    video.title,
     video.published_at,
     video.channel_name,
     video.views,
@@ -64,8 +61,8 @@ def create_video(video: VideoDataBase):
   row = execute(query, params, fetch_one=True)
   return row
 
-@app.patch("/videos/{video_id}/transcript")
-def update_transcript(video_id: int, data: dict):
+@app.patch("/videos/{video_id}/transcript", response_model=VideoData)
+def update_transcript(video_id: str, data: dict):
   transcript = data.get("transcript")
 
   query = """

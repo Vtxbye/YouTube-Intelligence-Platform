@@ -72,8 +72,8 @@ def get_recent_videos_from_playlist(playlist_id, published_after):
       published = item["contentDetails"]["videoPublishedAt"]
       if published >= published_after:
         videos.append({
-          "title": item["snippet"]["title"],
           "video_id": item["contentDetails"]["videoId"],
+          "title": item["snippet"]["title"],
           "published_at": published,
           "channel_name": item["snippet"]["channelTitle"]
         })
@@ -136,7 +136,7 @@ def get_data():
 
   today = datetime.now(UTC)
   cutoff_date = today - timedelta(days=WITHIN_MONTHS * 30)
-  cutoff_iso = cutoff_date.isoformat("T") + "Z"
+  cutoff_iso = cutoff_date.isoformat("T").replace("+00:00", "Z")
 
   all_results = []
 
@@ -157,6 +157,7 @@ def get_data():
       v["duration_seconds"] = stats["duration_seconds"]
       v["video_url"] = f"https://www.youtube.com/watch?v={v['video_id']}"
       v["transcript"] = get_transcript(v["video_url"])
+      v["matched_keywords"] = None
       all_results.append(v)
 
   return all_results
