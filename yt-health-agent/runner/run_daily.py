@@ -418,10 +418,10 @@ def main():
 
     # Skip if already ran successfully today (UTC date) — prevents double-runs
     # when the container restarts on a day the script already completed.
-    #last_run=ts(state.get("last_run_utc") or "")
-    #if last_run and last_run.date() == now().date():
-        #print(f"[skip] Already ran today ({state['last_run_utc']}), skipping")
-        #return
+    last_run=ts(state.get("last_run_utc") or "")
+    if last_run and last_run.date() == now().date():
+        print(f"[skip] Already ran today ({state['last_run_utc']}), skipping")
+        return
 
     # Compute open slots without touching the file yet — so a network failure
     # never leaves the DB pruned but unfilled.
