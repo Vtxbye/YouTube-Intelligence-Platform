@@ -61,3 +61,342 @@
 [info] pool=1740 active=1729 collecting=200 (offset=600)
 [done] channels_used=200 eligible_total=100 picked=100 added=100
 [runner] Attempt 1 succeeded
+[runner] Attempt 1 at Mon Mar 16 05:18:27 UTC 2026
+[info] db=328/1000 stale=1 need=673
+[backup] Saved /data/results.csv.backup_03162026
+[info] keywords(8): ['Gut Health Microbiome Science Explained', 'Why Gut Bacteria Affect Heart Health', 'The Microbiomes Role in Cognitive Function', 'How Poor Posture Affects Cardiovascular Health', 'The Science of Gut-Brain Axis Connection', 'Why Gut Health Matters for Mental Clarity', 'Cardiovascular Disease and Microbiome Research', 'The Impact of Microbiome on Posture and Mobility']
+[info] discovery publishedAfter=2026-02-14T05:19:16.718569Z
+[info] discovered_channels=25 after q='Gut Health Microbiome Science Explained -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=113 after q='Why Gut Bacteria Affect Heart Health -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=194 after q='The Microbiomes Role in Cognitive Function -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=286 after q='How Poor Posture Affects Cardiovascular Health -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=369 after q='The Science of Gut-Brain Axis Connection -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=432 after q='Why Gut Health Matters for Mental Clarity -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=501 after q='Cardiovascular Disease and Microbiome Research -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=501 after q='The Impact of Microbiome on Posture and Mobility -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] pool=2079 active=2068 collecting=200 (offset=800)
+[done] channels_used=200 eligible_total=50 picked=50 added=50
+[runner] Attempt 1 succeeded
+[runner] Attempt 1 at Tue Mar 17 06:58:42 UTC 2026
+[info] db=377/1000 stale=1 need=624
+[backup] Saved /data/results.csv.backup_03172026
+[info] keywords(8): ['Longevity Secrets From Blue Zones Explained', 'The Science Of Sleep Cycles And REM', 'Why Low Testosterone Levels Matter For Men', 'Metabolism 101: How Calories Are Burned', 'The Benefits Of Cold Showers For Hormones', 'How To Improve Sleep Quality Through Diet', 'The Effects Of Exercise On Testosterone Levels', 'The Optimal Sleep Schedule For Weight Loss']
+[info] discovery publishedAfter=2026-02-15T10:00:06.748893Z
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1369, in _conn_request
+    conn.connect()
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1145, in connect
+    address_info = socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/socket.py", line 974, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno -2] Name or service not known
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/app/run_daily.py", line 564, in <module>
+    main()
+  File "/app/run_daily.py", line 457, in main
+    found=discover_channels(y, discovery_queries, published_after, discovery_pages)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/run_daily.py", line 283, in discover_channels
+    safeSearch="none", relevanceLanguage="en").execute()
+                                               ^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/googleapiclient/_helpers.py", line 130, in positional_wrapper
+    return wrapped(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/googleapiclient/http.py", line 923, in execute
+    resp, content = _retry_request(
+                    ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/googleapiclient/http.py", line 222, in _retry_request
+    raise exception
+  File "/usr/local/lib/python3.11/site-packages/googleapiclient/http.py", line 191, in _retry_request
+    resp, content = http.request(uri, method, *args, **kwargs)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1727, in request
+    (response, content) = self._request(
+                          ^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1447, in _request
+    (response, content) = self._conn_request(conn, request_uri, method, body, headers)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1376, in _conn_request
+    raise ServerNotFoundError("Unable to find the server at %s" % conn.host)
+httplib2.error.ServerNotFoundError: Unable to find the server at youtube.googleapis.com
+[runner] Attempt 1 failed, retrying in 1 hour...
+[runner] Attempt 1 at Wed Mar 18 05:02:52 UTC 2026
+[info] db=377/1000 stale=1 need=624
+[backup] Saved /data/results.csv.backup_03182026
+[info] keywords(8): ['The Science of Gut Health and Microbiome', 'How Nutrition Affects Your Gut Microbiome', 'The Importance of Macronutrients for Muscle Growth', 'Why Fiber is Essential for Gut Health', 'The Relationship Between Diet and Respiratory Health', 'Understanding the Role of Probiotics in Gut Health', 'How to Optimize Your Macronutrient Ratio for Muscle Growth', 'The Impact of Air Pollution on Respiratory Health']
+[info] discovery publishedAfter=2026-02-16T05:21:22.924995Z
+[info] discovered_channels=72 after q='The Science of Gut Health and Microbiome -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=156 after q='How Nutrition Affects Your Gut Microbiome -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=227 after q='The Importance of Macronutrients for Muscle Growth -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=299 after q='Why Fiber is Essential for Gut Health -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=366 after q='The Relationship Between Diet and Respiratory Health -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1399, in _conn_request
+    response = conn.getresponse()
+               ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/http/client.py", line 1415, in getresponse
+    response.begin()
+  File "/usr/local/lib/python3.11/http/client.py", line 330, in begin
+    version, status, reason = self._read_status()
+                              ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/http/client.py", line 299, in _read_status
+    raise RemoteDisconnected("Remote end closed connection without"
+http.client.RemoteDisconnected: Remote end closed connection without response
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/app/run_daily.py", line 564, in <module>
+    main()
+  File "/app/run_daily.py", line 457, in main
+    found=discover_channels(y, discovery_queries, published_after, discovery_pages)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/run_daily.py", line 283, in discover_channels
+    safeSearch="none", relevanceLanguage="en").execute()
+                                               ^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/googleapiclient/_helpers.py", line 130, in positional_wrapper
+    return wrapped(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/googleapiclient/http.py", line 923, in execute
+    resp, content = _retry_request(
+                    ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/googleapiclient/http.py", line 191, in _retry_request
+    resp, content = http.request(uri, method, *args, **kwargs)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1727, in request
+    (response, content) = self._request(
+                          ^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1447, in _request
+    (response, content) = self._conn_request(conn, request_uri, method, body, headers)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1408, in _conn_request
+    conn.connect()
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1145, in connect
+    address_info = socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/socket.py", line 974, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno -5] No address associated with hostname
+[runner] Attempt 1 failed, retrying in 1 hour...
+[runner] Attempt 2 at Wed Mar 18 13:35:03 UTC 2026
+[info] db=377/1000 stale=3 need=626
+[backup] Saved /data/results.csv.backup_03182026
+[info] keywords(8): ['Gut Health and Microbiome Science Explained', 'How Gut Bacteria Affect Muscle Growth and Recovery', 'The Science of Supplements for Optimal Health', 'Cognitive Performance and Brain Health Research Breakdown', 'The Impact of Gut Health on Mental Clarity and Focus', 'How to Optimize Gut Health for Better Immune Function', 'The Connection Between Gut Health and Hormonal Balance', 'The Role of Probiotics in Enhancing Muscle Recovery and Growth']
+[info] discovery publishedAfter=2026-02-16T14:09:21.495974Z
+[info] discovered_channels=86 after q='Gut Health and Microbiome Science Explained -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=117 after q='How Gut Bacteria Affect Muscle Growth and Recovery -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=205 after q='The Science of Supplements for Optimal Health -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=285 after q='Cognitive Performance and Brain Health Research Breakdown -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=363 after q='The Impact of Gut Health on Mental Clarity and Focus -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=438 after q='How to Optimize Gut Health for Better Immune Function -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=455 after q='The Connection Between Gut Health and Hormonal Balance -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=502 after q='The Role of Probiotics in Enhancing Muscle Recovery and Growth -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] pool=2360 active=2335 collecting=200 (offset=1000)
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1399, in _conn_request
+    response = conn.getresponse()
+               ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/http/client.py", line 1415, in getresponse
+    response.begin()
+  File "/usr/local/lib/python3.11/http/client.py", line 330, in begin
+    version, status, reason = self._read_status()
+                              ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/http/client.py", line 299, in _read_status
+    raise RemoteDisconnected("Remote end closed connection without"
+http.client.RemoteDisconnected: Remote end closed connection without response
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/app/run_daily.py", line 564, in <module>
+    main()
+  File "/app/run_daily.py", line 518, in main
+    det=videos_details(y, page_ids)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/run_daily.py", line 320, in videos_details
+    id=",".join(batch), maxResults=50).execute()
+                                       ^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/googleapiclient/_helpers.py", line 130, in positional_wrapper
+    return wrapped(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/googleapiclient/http.py", line 923, in execute
+    resp, content = _retry_request(
+                    ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/googleapiclient/http.py", line 191, in _retry_request
+    resp, content = http.request(uri, method, *args, **kwargs)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1727, in request
+    (response, content) = self._request(
+                          ^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1447, in _request
+    (response, content) = self._conn_request(conn, request_uri, method, body, headers)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1408, in _conn_request
+    conn.connect()
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1145, in connect
+    address_info = socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/socket.py", line 974, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno -3] Temporary failure in name resolution
+[runner] Attempt 2 failed, retrying in 1 hour...
+[runner] Attempt 2 at Thu Mar 19 05:00:20 UTC 2026
+[runner] Attempt 1 at Thu Mar 19 05:20:15 UTC 2026
+[info] db=377/1000 stale=4 need=627
+[backup] Saved /data/results.csv.backup_03192026
+[info] keywords(8): ['The Science of Gut Health and Microbiome', 'Why Gut Bacteria Matters for Immune Function', 'How Probiotics Affect the Human Body', 'The Role of Gut Health in Muscle Growth', 'What Are the Essential Amino Acids for Muscle', 'The Immune System and How it Responds to Exercise', 'Breakdown of Protein Synthesis in Muscle', 'Expert Tips for Optimizing Gut-Immune Health']
+[info] discovery publishedAfter=2026-02-17T05:29:54.033025Z
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1369, in _conn_request
+    conn.connect()
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1145, in connect
+    address_info = socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/socket.py", line 974, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno -3] Temporary failure in name resolution
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/app/run_daily.py", line 564, in <module>
+    main()
+  File "/app/run_daily.py", line 457, in main
+    found=discover_channels(y, discovery_queries, published_after, discovery_pages)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/run_daily.py", line 283, in discover_channels
+    safeSearch="none", relevanceLanguage="en").execute()
+                                               ^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/googleapiclient/_helpers.py", line 130, in positional_wrapper
+    return wrapped(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/googleapiclient/http.py", line 923, in execute
+    resp, content = _retry_request(
+                    ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/googleapiclient/http.py", line 222, in _retry_request
+    raise exception
+  File "/usr/local/lib/python3.11/site-packages/googleapiclient/http.py", line 191, in _retry_request
+    resp, content = http.request(uri, method, *args, **kwargs)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1727, in request
+    (response, content) = self._request(
+                          ^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1447, in _request
+    (response, content) = self._conn_request(conn, request_uri, method, body, headers)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1376, in _conn_request
+    raise ServerNotFoundError("Unable to find the server at %s" % conn.host)
+httplib2.error.ServerNotFoundError: Unable to find the server at youtube.googleapis.com
+[runner] Attempt 2 failed, retrying in 1 hour...
+[info] db=377/1000 stale=4 need=627
+[backup] Saved /data/results.csv.backup_03192026
+[info] keywords(8): ['The Science of Neuroplasticity', 'Why Protein is Essential for Brain Function', 'The Impact of Inflammation on Cardiovascular Health', 'What Research Says About Bone Density and Osteoporosis', 'The Role of Omega-3 Fatty Acids in Brain Health', 'How Gut Health Affects Cognitive Performance', 'The Relationship Between Sleep and Cardiovascular Disease', 'The Benefits of Vitamin D for Bone Health']
+[info] discovery publishedAfter=2026-02-17T05:55:38.853727Z
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1369, in _conn_request
+    conn.connect()
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1145, in connect
+    address_info = socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/socket.py", line 974, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno -3] Temporary failure in name resolution
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/app/run_daily.py", line 564, in <module>
+    main()
+  File "/app/run_daily.py", line 457, in main
+    found=discover_channels(y, discovery_queries, published_after, discovery_pages)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/run_daily.py", line 283, in discover_channels
+    safeSearch="none", relevanceLanguage="en").execute()
+                                               ^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/googleapiclient/_helpers.py", line 130, in positional_wrapper
+    return wrapped(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/googleapiclient/http.py", line 923, in execute
+    resp, content = _retry_request(
+                    ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/googleapiclient/http.py", line 222, in _retry_request
+    raise exception
+  File "/usr/local/lib/python3.11/site-packages/googleapiclient/http.py", line 191, in _retry_request
+    resp, content = http.request(uri, method, *args, **kwargs)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1727, in request
+    (response, content) = self._request(
+                          ^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1447, in _request
+    (response, content) = self._conn_request(conn, request_uri, method, body, headers)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1376, in _conn_request
+    raise ServerNotFoundError("Unable to find the server at %s" % conn.host)
+httplib2.error.ServerNotFoundError: Unable to find the server at youtube.googleapis.com
+[runner] Attempt 1 failed, retrying in 1 hour...
+[runner] Attempt 3 at Thu Mar 19 14:47:58 UTC 2026
+[info] db=377/1000 stale=4 need=627
+[backup] Saved /data/results.csv.backup_03192026
+[info] keywords(8): ['The Science of Longevity and Aging', 'Why Posture Matters for Spinal Health', 'How Muscle Memory Affects Strength Training', 'The Effects of Aging on Bone Density', 'Expert Tips for Maintaining Mobility', 'The Research on Osteoporosis Prevention', 'Breaking Down the Biology of Longevity', 'The Impact of Exercise on Osteoblast Activity']
+[info] discovery publishedAfter=2026-02-17T15:04:36.537604Z
+[info] discovered_channels=81 after q='The Science of Longevity and Aging -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=166 after q='Why Posture Matters for Spinal Health -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=187 after q='How Muscle Memory Affects Strength Training -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1399, in _conn_request
+    response = conn.getresponse()
+               ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/http/client.py", line 1415, in getresponse
+    response.begin()
+  File "/usr/local/lib/python3.11/http/client.py", line 330, in begin
+    version, status, reason = self._read_status()
+                              ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/http/client.py", line 299, in _read_status
+    raise RemoteDisconnected("Remote end closed connection without"
+http.client.RemoteDisconnected: Remote end closed connection without response
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/app/run_daily.py", line 564, in <module>
+    main()
+  File "/app/run_daily.py", line 457, in main
+    found=discover_channels(y, discovery_queries, published_after, discovery_pages)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/run_daily.py", line 283, in discover_channels
+    safeSearch="none", relevanceLanguage="en").execute()
+                                               ^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/googleapiclient/_helpers.py", line 130, in positional_wrapper
+    return wrapped(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/googleapiclient/http.py", line 923, in execute
+    resp, content = _retry_request(
+                    ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/googleapiclient/http.py", line 191, in _retry_request
+    resp, content = http.request(uri, method, *args, **kwargs)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1727, in request
+    (response, content) = self._request(
+                          ^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1447, in _request
+    (response, content) = self._conn_request(conn, request_uri, method, body, headers)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1408, in _conn_request
+    conn.connect()
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1145, in connect
+    address_info = socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/socket.py", line 974, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno -3] Temporary failure in name resolution
+[runner] Attempt 3 failed, retrying in 1 hour...
