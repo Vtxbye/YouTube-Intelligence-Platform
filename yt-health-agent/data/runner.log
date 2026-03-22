@@ -783,3 +783,71 @@ YouTube API error: <HttpError 403 when requesting https://youtube.googleapis.com
 [info] pool=4309 active=4275 collecting=200 (offset=1400)
 [done] channels_used=200 eligible_total=0 picked=0 added=0
 [runner] Attempt 2 succeeded
+[runner] Attempt 1 at Sun Mar 22 05:00:12 UTC 2026
+[info] db=733/1000 stale=3 need=270
+[backup] Saved /data/results.csv.backup_03222026
+[info] keywords(8): ['The Science of Hormone Balance and Endocrine Health', 'How the Immune System Responds to Stress and Inflammation', 'The Role of Testosterone in Mens Health and Wellness', 'Blood Sugar and Insulin: Understanding the Regulation Process', 'The Impact of Gut Health on Immune Function and Hormones', 'Explaining the Connection between Thyroid Function and Metabolism', 'Why Adrenal Fatigue Matters for Endocrine Health and Energy', 'Breaking Down the Research on Testosterone Replacement Therapy']
+[info] discovery publishedAfter=2026-02-20T05:36:26.567629Z
+[info] discovered_channels=88 after q='The Science of Hormone Balance and Endocrine Health -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=175 after q='How the Immune System Responds to Stress and Inflammation -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=248 after q='The Role of Testosterone in Mens Health and Wellness -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=330 after q='Blood Sugar and Insulin: Understanding the Regulation Process -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=383 after q='The Impact of Gut Health on Immune Function and Hormones -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=449 after q='Explaining the Connection between Thyroid Function and Metabolism -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=457 after q='Why Adrenal Fatigue Matters for Endocrine Health and Energy -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=528 after q='Breaking Down the Research on Testosterone Replacement Therapy -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] pool=4567 active=4529 collecting=200 (offset=1600)
+Traceback (most recent call last):
+  File "/app/run_daily.py", line 564, in <module>
+    main()
+  File "/app/run_daily.py", line 518, in main
+    det=videos_details(y, page_ids)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/run_daily.py", line 320, in videos_details
+    id=",".join(batch), maxResults=50).execute()
+                                       ^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/googleapiclient/_helpers.py", line 130, in positional_wrapper
+    return wrapped(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/googleapiclient/http.py", line 923, in execute
+    resp, content = _retry_request(
+                    ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/googleapiclient/http.py", line 222, in _retry_request
+    raise exception
+  File "/usr/local/lib/python3.11/site-packages/googleapiclient/http.py", line 191, in _retry_request
+    resp, content = http.request(uri, method, *args, **kwargs)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1727, in request
+    (response, content) = self._request(
+                          ^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1447, in _request
+    (response, content) = self._conn_request(conn, request_uri, method, body, headers)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1399, in _conn_request
+    response = conn.getresponse()
+               ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/http/client.py", line 1415, in getresponse
+    response.begin()
+  File "/usr/local/lib/python3.11/http/client.py", line 330, in begin
+    version, status, reason = self._read_status()
+                              ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/http/client.py", line 299, in _read_status
+    raise RemoteDisconnected("Remote end closed connection without"
+http.client.RemoteDisconnected: Remote end closed connection without response
+[runner] Attempt 1 failed, retrying in 1 hour...
+[runner] Attempt 2 at Sun Mar 22 16:05:17 UTC 2026
+[info] db=804/1000 stale=0 need=196
+[backup] Saved /data/results.csv.backup_03222026
+[info] keywords(8): ['The Science of Longevity and Aging', 'Why Inflammation Matters for Bone Health', 'How to Improve Posture for Better Health', 'The Role of Gut Health in Inflammation', 'Why Osteoporosis is a Growing Concern', 'The Impact of Stress on Inflammation and Health', 'Expert Tips for Maintaining Strong Bones', 'The Relationship Between Posture and Chronic Pain']
+[info] discovery publishedAfter=2026-02-20T16:05:56.008609Z
+[info] discovered_channels=63 after q='The Science of Longevity and Aging -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=152 after q='Why Inflammation Matters for Bone Health -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=171 after q='How to Improve Posture for Better Health -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=249 after q='The Role of Gut Health in Inflammation -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=305 after q='Why Osteoporosis is a Growing Concern -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=383 after q='The Impact of Stress on Inflammation and Health -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=471 after q='Expert Tips for Maintaining Strong Bones -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=545 after q='The Relationship Between Posture and Chronic Pain -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] pool=5129 active=5087 collecting=200 (offset=1800)
+[done] channels_used=200 eligible_total=49 picked=49 added=49
+[runner] Attempt 2 succeeded
