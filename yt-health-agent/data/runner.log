@@ -851,3 +851,19 @@ http.client.RemoteDisconnected: Remote end closed connection without response
 [info] pool=5129 active=5087 collecting=200 (offset=1800)
 [done] channels_used=200 eligible_total=49 picked=49 added=49
 [runner] Attempt 2 succeeded
+[runner] Attempt 1 at Mon Mar 23 05:00:01 UTC 2026
+[info] db=853/1000 stale=0 need=147
+[backup] Saved /data/results.csv.backup_03232026
+[info] keywords(8): ['Science of Immune System Boosting', 'Nutrition for Testosterone Balance', 'Macronutrient Breakdown for Weight Loss', 'How the Gut Microbiome Affects Mental Health', 'Why Macronutrient Ratios Matter for Health', 'The Impact of Nutrition on Gut Health', 'Testosterone and Exercise: What the Science Says', 'Gut Health and Autoimmune Disease: Expert Tips']
+[info] discovery publishedAfter=2026-02-21T05:00:50.364508Z
+[info] discovered_channels=86 after q='Science of Immune System Boosting -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=164 after q='Nutrition for Testosterone Balance -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=234 after q='Macronutrient Breakdown for Weight Loss -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=323 after q='How the Gut Microbiome Affects Mental Health -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=332 after q='Why Macronutrient Ratios Matter for Health -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=406 after q='The Impact of Nutrition on Gut Health -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=464 after q='Testosterone and Exercise: What the Science Says -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=529 after q='Gut Health and Autoimmune Disease: Expert Tips -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] pool=5332 active=5290 collecting=200 (offset=2000)
+[done] channels_used=200 eligible_total=112 picked=112 added=112
+[runner] Attempt 1 succeeded
