@@ -20,7 +20,7 @@ def get_existing_videos():
 
 def upload_videos():
   script_dir = Path(__file__).resolve().parent
-  data_file = script_dir.parent / "yt-health-agent" / "data" / "results.csv"
+  data_file = script_dir.parents[1] / "yt-health-agent" / "data" / "results.csv"
 
   with open(data_file, "r", encoding="utf-8") as f:
     reader = csv.DictReader(f)
