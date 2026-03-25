@@ -883,3 +883,111 @@ http.client.RemoteDisconnected: Remote end closed connection without response
 [info] pool=5693 active=5646 collecting=200 (offset=2200)
 [done] channels_used=200 eligible_total=68 picked=39 added=39
 [runner] Attempt 1 succeeded
+[runner] Attempt 1 at Wed Mar 25 05:00:01 UTC 2026
+[info] db=1000/1000 stale=3 need=3
+[backup] Saved /data/results.csv.backup_03252026
+[info] keywords(8): ['Science of Progressive Overload for Strength Training', 'Why Low Cholesterol Levels Are a Concern for Heart Disease', 'How Intermittent Fasting Affects Cardiovascular Health', 'The Importance of Eccentric Training for Muscle Strength', 'Why Omega-3 Fatty Acids Matter for Heart Health', 'The Benefits of High-Intensity Interval Training for Seniors', 'How Carbohydrate Restriction Impacts Cholesterol Levels', 'The Science of Blood Pressure Variability and Cardiovascular Risk']
+[info] discovery publishedAfter=2026-02-23T05:00:40.428508Z
+[info] discovered_channels=92 after q='Science of Progressive Overload for Strength Training -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=188 after q='Why Low Cholesterol Levels Are a Concern for Heart Disease -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=273 after q='How Intermittent Fasting Affects Cardiovascular Health -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=294 after q='The Importance of Eccentric Training for Muscle Strength -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=381 after q='Why Omega-3 Fatty Acids Matter for Heart Health -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=444 after q='The Benefits of High-Intensity Interval Training for Seniors -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=479 after q='How Carbohydrate Restriction Impacts Cholesterol Levels -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=562 after q='The Science of Blood Pressure Variability and Cardiovascular Risk -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] pool=5953 active=5809 collecting=200 (offset=2400)
+YouTube API error: <HttpError 404 when requesting https://youtube.googleapis.com/youtube/v3/playlistItems?part=contentDetails&playlistId=UUsS2xsNIJzC5QpQVLxwRbLg&maxResults=50&key=AIzaSyBqYkaEuXRao0Zg-ZlnAa6T8qKXCVcYAMc&alt=json returned "The playlist identified with the request's <code>playlistId</code> parameter cannot be found.". Details: "[{'message': "The playlist identified with the request's <code>playlistId</code> parameter cannot be found.", 'domain': 'youtube.playlistItem', 'reason': 'playlistNotFound', 'location': 'playlistId', 'locationType': 'parameter'}]">
+[runner] Attempt 1 failed, retrying in 1 hour...
+[runner] Attempt 2 at Wed Mar 25 06:03:21 UTC 2026
+[info] db=1000/1000 stale=3 need=3
+[backup] Saved /data/results.csv.backup_03252026
+[info] keywords(8): ['cholesterol levels explained', 'testosterone and heart health', 'strength training for muscle growth', 'hormonal balance in women', 'how cholesterol affects cardiovascular disease', 'testosterone decline in men explained', 'the science of resistance training', 'impact of estrogen on womens health']
+[info] discovery publishedAfter=2026-02-23T06:03:49.155557Z
+[info] discovered_channels=90 after q='cholesterol levels explained -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=148 after q='testosterone and heart health -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=223 after q='strength training for muscle growth -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=311 after q='hormonal balance in women -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=373 after q='how cholesterol affects cardiovascular disease -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=435 after q='testosterone decline in men explained -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=459 after q='the science of resistance training -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=543 after q='impact of estrogen on womens health -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/http/client.py", line 604, in _read_chunked
+    value.append(self._safe_read(chunk_left))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/http/client.py", line 648, in _safe_read
+    raise IncompleteRead(data, amt - len(data))
+http.client.IncompleteRead: IncompleteRead(4929 bytes read, 5253 more expected)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/app/run_daily.py", line 564, in <module>
+    main()
+  File "/app/run_daily.py", line 467, in main
+    new_scores=score_channels(y, new_cands, new_uploads, cutoff, min_views, min_dur, exclude_kids, neg_terms, keywords)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/run_daily.py", line 386, in score_channels
+    det=videos_details(y, vids)
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/run_daily.py", line 320, in videos_details
+    id=",".join(batch), maxResults=50).execute()
+                                       ^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/googleapiclient/_helpers.py", line 130, in positional_wrapper
+    return wrapped(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/googleapiclient/http.py", line 923, in execute
+    resp, content = _retry_request(
+                    ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/googleapiclient/http.py", line 191, in _retry_request
+    resp, content = http.request(uri, method, *args, **kwargs)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1727, in request
+    (response, content) = self._request(
+                          ^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1447, in _request
+    (response, content) = self._conn_request(conn, request_uri, method, body, headers)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/httplib2/__init__.py", line 1428, in _conn_request
+    content = response.read()
+              ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/http/client.py", line 472, in read
+    return self._read_chunked(amt)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/http/client.py", line 610, in _read_chunked
+    raise IncompleteRead(b''.join(value)) from exc
+http.client.IncompleteRead: IncompleteRead(16 bytes read)
+[runner] Attempt 2 failed, retrying in 1 hour...
+[runner] Attempt 3 at Wed Mar 25 15:32:36 UTC 2026
+[info] db=1000/1000 stale=6 need=6
+[backup] Saved /data/results.csv.backup_03252026
+[info] keywords(8): ['Science of Osteoporosis Treatment', 'Why Bone Density Matters in Older Adults', 'How Osteoporosis Affects Daily Life', 'What Causes Anxiety in People with Chronic Illness', 'Why Mental Health is Crucial for Bodybuilders', 'How to Boost Metabolism for Weight Loss', 'Expert Tips for Managing Anxiety with Exercise', 'The Impact of Osteoporosis on Body Function']
+[info] discovery publishedAfter=2026-02-23T15:33:08.219878Z
+[info] discovered_channels=83 after q='Science of Osteoporosis Treatment -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=168 after q='Why Bone Density Matters in Older Adults -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=234 after q='How Osteoporosis Affects Daily Life -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=255 after q='What Causes Anxiety in People with Chronic Illness -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=341 after q='Why Mental Health is Crucial for Bodybuilders -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=427 after q='How to Boost Metabolism for Weight Loss -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=507 after q='Expert Tips for Managing Anxiety with Exercise -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=570 after q='The Impact of Osteoporosis on Body Function -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] pool=6265 active=6118 collecting=200 (offset=2400)
+YouTube API error: <HttpError 404 when requesting https://youtube.googleapis.com/youtube/v3/playlistItems?part=contentDetails&playlistId=UUsS2xsNIJzC5QpQVLxwRbLg&maxResults=50&key=AIzaSyBqYkaEuXRao0Zg-ZlnAa6T8qKXCVcYAMc&alt=json returned "The playlist identified with the request's <code>playlistId</code> parameter cannot be found.". Details: "[{'message': "The playlist identified with the request's <code>playlistId</code> parameter cannot be found.", 'domain': 'youtube.playlistItem', 'reason': 'playlistNotFound', 'location': 'playlistId', 'locationType': 'parameter'}]">
+[runner] Attempt 3 failed, retrying in 1 hour...
+[runner] Attempt 4 at Wed Mar 25 17:41:01 UTC 2026
+[info] db=1000/1000 stale=6 need=6
+[backup] Saved /data/results.csv.backup_03252026
+[info] keywords(8): ['The Science of Cortisol and Stress', 'Why High Cortisol Levels Are Bad for You', 'How Stress Affects Mental Health and Anxiety', 'Understanding the Relationship Between Blood Sugar and Insulin', 'Expert Tips for Managing Osteoporosis and Bone Health', 'The Impact of Diet on Cortisol Levels and Stress', 'Breaking Down the Research on Anxiety and Mental Health', 'A Guide to Understanding Insulin Resistance and Its Effects']
+[info] discovery publishedAfter=2026-02-23T17:41:42.509034Z
+[info] discovered_channels=23 after q='The Science of Cortisol and Stress -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=115 after q='Why High Cortisol Levels Are Bad for You -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=208 after q='How Stress Affects Mental Health and Anxiety -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=270 after q='Understanding the Relationship Between Blood Sugar and Insulin -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=323 after q='Expert Tips for Managing Osteoporosis and Bone Health -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=403 after q='The Impact of Diet on Cortisol Levels and Stress -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=486 after q='Breaking Down the Research on Anxiety and Mental Health -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] discovered_channels=533 after q='A Guide to Understanding Insulin Resistance and Its Effects -kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr'
+[info] pool=6507 active=6360 collecting=200 (offset=2400)
+YouTube API error: <HttpError 404 when requesting https://youtube.googleapis.com/youtube/v3/playlistItems?part=contentDetails&playlistId=UU9AcqDmgigsfE2y-EB9j4_Q&maxResults=50&key=AIzaSyBqYkaEuXRao0Zg-ZlnAa6T8qKXCVcYAMc&alt=json returned "The playlist identified with the request's <code>playlistId</code> parameter cannot be found.". Details: "[{'message': "The playlist identified with the request's <code>playlistId</code> parameter cannot be found.", 'domain': 'youtube.playlistItem', 'reason': 'playlistNotFound', 'location': 'playlistId', 'locationType': 'parameter'}]">
+[runner] Attempt 4 failed, retrying in 1 hour...
