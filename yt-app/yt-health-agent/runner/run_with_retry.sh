@@ -1,6 +1,9 @@
 #!/bin/sh
 # Runs the scraper once. On failure, retries every hour up to MAX_RETRIES times.
 
+# Load container environment (cron runs with empty env, Docker vars not inherited)
+[ -f /app/container_env.sh ] && . /app/container_env.sh
+
 MAX_RETRIES=5
 
 attempt=1

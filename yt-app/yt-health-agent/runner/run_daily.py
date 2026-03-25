@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import os, csv, json, time, re
+import os, csv, json, time, re, random
 from datetime import datetime, timezone
 
 import requests, isodate
@@ -11,14 +11,18 @@ FIELDS = ["video_id","title","channel","published_at","duration_seconds","views"
 
 HEALTH = ["health","healthy","wellness","nutrition","diet","protein","fitness","workout","exercise",
           "sleep","stress","mental","mindfulness","meditation","recovery","lifestyle","habit","longevity",
-          "weight loss","fat loss"]
+          "weight loss","fat loss", "bodybuilding"]
 # Stricter set for title-level gating — excludes terms too broad for titles ("lifestyle","habit","mental")
 HEALTH_TITLE = ["health","healthy","wellness","nutrition","diet","protein","fitness",
                 "sleep","stress","mental health","mindfulness","meditation","recovery","longevity",
                 "weight loss","fat loss","supplement","vitamin","immune","gut health","inflammation",
                 "cholesterol","blood pressure","blood sugar","anxiety","depression"]
+
 NEG = ["toddler","toddlers","kids","kid","baby","nursery","rhyme","rhymes","cocomelon","cartoon",
-       "toy","toys","dump truck","truck song","vehicle song","abc song","numbers for toddlers"]
+       "toy","toys","dump truck","truck song","vehicle song","abc song","numbers for toddlers",
+       "asmr", "asleep to", "asleep"]
+# Country codes to exclude from the channel pool
+BLOCKED_COUNTRIES = {"IN"}
 # Title-level vlog signals — checked against title only to avoid over-blocking descriptions
 VLOG_TITLE_NEG = [
     # lifestyle/vlog
@@ -86,14 +90,34 @@ def prune(path, months_back):
     os.replace(tmp,path)
     return len(kept)
 
+def dedup_csv(path):
+    """Remove duplicate video_id rows from the CSV, keeping the first occurrence."""
+    if not os.path.exists(path): return 0
+    ensure_header(path)
+    seen_ids=set(); kept=[]
+    with open(path,"r",newline="",encoding="utf-8") as f:
+        all_rows=list(csv.DictReader(f))
+    for row in all_rows:
+        vid=(row.get("video_id") or "").strip()
+        if vid and vid not in seen_ids:
+            seen_ids.add(vid); kept.append(row)
+    removed=len(all_rows)-len(kept)
+    if removed > 0:
+        tmp=path+".tmp"
+        with open(tmp,"w",newline="",encoding="utf-8") as f:
+            w=csv.DictWriter(f,fieldnames=FIELDS); w.writeheader(); w.writerows(kept)
+        os.replace(tmp,path)
+        print(f"[dedup] Removed {removed} duplicate rows")
+    return removed
+
 def count_csv_rows(path):
     if not os.path.exists(path): return 0
     with open(path,"r",newline="",encoding="utf-8") as f:
         return sum(1 for _ in csv.DictReader(f))
 
 def backup_csv(path):
-    """Copy results.csv to results.csv.backup_MMDDYYYY using today's CST date."""
-    import shutil
+    """Copy results.csv to results.csv.backup_MMDDYYYY using today's CST date, keeping only the 2 most recent backups."""
+    import shutil, glob as _glob
     from zoneinfo import ZoneInfo
     if not os.path.exists(path): return
     cst_now=datetime.now(ZoneInfo("America/Chicago"))
@@ -101,6 +125,12 @@ def backup_csv(path):
     dest=f"{path}.backup_{suffix}"
     shutil.copy2(path, dest)
     print(f"[backup] Saved {dest}")
+    # Prune old backups, keeping only the 2 most recent (sort by mtime)
+    pattern=f"{path}.backup_*"
+    backups=sorted(_glob.glob(pattern), key=os.path.getmtime)
+    for old in backups[:-2]:
+        os.remove(old)
+        print(f"[backup] Removed old backup {old}")
 
 def count_prunable(path, months_back):
     """Count rows that would be removed by pruning, without touching the file."""
@@ -141,15 +171,28 @@ def read_seen(csv_path):
     return seen
 
 # ---------- keywords (strict JSON only) ----------
+TOPIC_POOL = [
+    "gut health and microbiome","sleep science and optimization","stress and cortisol",
+    "mental health and anxiety","bodybuilding and muscle growth","strength training science",
+    "cardiovascular health","longevity and aging","hormones and endocrine health",
+    "weight loss and metabolism","supplements and vitamins","recovery and injury prevention",
+    "nutrition and macronutrients","immune system","inflammation","blood sugar and insulin",
+    "cholesterol and heart disease","respiratory health","bone health and osteoporosis",
+    "skin health and dermatology","cognitive performance and brain health",
+    "intermittent fasting","protein and amino acids","hydration and electrolytes",
+    "posture and mobility","testosterone and men's health","women's hormonal health",
+]
+
 def ollama_json_keywords(ollama_url, model):
-    prompt=("Return ONLY a JSON array (no prose) of 8 short YouTube search phrases for "
-            "INFORMATIONAL general health content — science explanations, expert tips, research breakdowns, "
-            "and how-to guides on topics like nutrition, sleep, stress, mental health, gut health, "
-            "longevity, or recovery. Avoid phrases that would find workout demonstrations, exercise "
-            "follow-alongs, fitness routines, vlogs, or personal lifestyle content. "
+    topics=random.sample(TOPIC_POOL, k=4)
+    topic_str=", ".join(topics)
+    prompt=(f"Return ONLY a JSON array (no prose) of 8 short YouTube search phrases for "
+            f"INFORMATIONAL health content specifically about: {topic_str}. "
+            "Focus on science explanations, expert tips, research breakdowns, and how-to guides. "
+            "Avoid phrases that would find workout demonstrations, exercise follow-alongs, vlogs, or kids content. "
             "Prefer phrases like 'science of X', 'why X matters', 'how X affects health', 'X explained'.")
     r=requests.post(f"{ollama_url.rstrip('/')}/api/generate",
-                    json={"model":model,"prompt":prompt,"stream":False,"options":{"temperature":0.4}},
+                    json={"model":model,"prompt":prompt,"stream":False,"options":{"temperature":0.8}},
                     timeout=120)
     r.raise_for_status()
     response=(r.json().get("response") or "").strip()
@@ -200,6 +243,16 @@ def is_likely_english(title, sn):
             return False
     return True
 
+EMOJI_RE = re.compile(
+    "[\U0001F300-\U0001FAFF"   # emoticons, symbols, pictographs
+    "\U00002600-\U000027BF"    # misc symbols, dingbats
+    "\U0000FE00-\U0000FE0F"    # variation selectors
+    "]", re.UNICODE
+)
+
+def has_emoji(text):
+    return bool(EMOJI_RE.search(text or ""))
+
 def has_health_in_title(title):
     t=(title or "").lower()
     return any(h in t for h in HEALTH_TITLE)
@@ -248,14 +301,17 @@ def discover_channels(y, queries, published_after, pages_per_query):
     return ch
 
 def uploads_playlists(y, channel_ids):
-    out={}
+    """Returns (playlists_dict, countries_dict) — snippet added at no extra quota cost."""
+    playlists={}; countries={}
     for batch in chunks(channel_ids,50):
-        resp=y.channels().list(part="contentDetails", id=",".join(batch), maxResults=50).execute()
+        resp=y.channels().list(part="contentDetails,snippet", id=",".join(batch), maxResults=50).execute()
         for it in resp.get("items",[]):
             cid=it.get("id")
             pl=it.get("contentDetails",{}).get("relatedPlaylists",{}).get("uploads")
-            if cid and pl: out[cid]=pl
-    return out
+            country=((it.get("snippet",{}) or {}).get("country") or "").upper()
+            if cid and pl:
+                playlists[cid]=pl; countries[cid]=country
+    return playlists, countries
 
 def playlist_page(y, plid, token):
     resp=y.playlistItems().list(part="contentDetails", playlistId=plid, maxResults=50, pageToken=token).execute()
@@ -302,6 +358,7 @@ def filter_video(it, cutoff, min_views, min_dur, exclude_kids, neg_terms, keywor
     blob=f"{title}\n{channel}\n{desc}\n{' '.join(tags)}"
 
     if not is_likely_english(title, sn): return None
+    if has_emoji(title): return None
     if has_neg(blob, neg_terms): return None
     if not has_health_in_title(title): return None
     if is_vlog_title(title): return None
@@ -364,6 +421,7 @@ def main():
 
     os.makedirs(os.path.dirname(out_csv), exist_ok=True)
     ensure_header(out_csv)
+    dedup_csv(out_csv)
 
     state=load_state(state_file)
 
@@ -394,14 +452,15 @@ def main():
     keywords=sanitize(ollama_json_keywords(ollama_url, ollama_model))
     print(f"[info] keywords({len(keywords)}): {keywords}")
 
-    last_run=ts(state.get("last_run_utc") or "")
-    pub_after_dt=max(last_run, cutoff) if last_run else cutoff
-    published_after=iso(pub_after_dt)
+    # Discovery always looks back at least 30 days so channels are found even when
+    # runs happen close together (using last_run_utc would make the window too tight).
+    discovery_floor=now() - relativedelta(days=30)
+    published_after=iso(max(discovery_floor, cutoff))
     print(f"[info] discovery publishedAfter={published_after}")
 
     y=build("youtube","v3",developerKey=api_key)
 
-    neg_q="-kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm"
+    neg_q="-kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr"
     discovery_queries=[f"{k} {neg_q}" for k in keywords]
 
     found=discover_channels(y, discovery_queries, published_after, discovery_pages)
@@ -413,10 +472,12 @@ def main():
     # Score only channels not yet in pool; add every one that has health content
     new_cands=[cid for cid,_ in ranked if cid not in pool_set]
     if new_cands:
-        new_uploads=uploads_playlists(y, new_cands)
+        new_uploads,new_countries=uploads_playlists(y, new_cands)
         new_scores=score_channels(y, new_cands, new_uploads, cutoff, min_views, min_dur, exclude_kids, neg_terms, keywords)
+        # Drop blocked-country channels before adding to pool
+        new_countries_blocked={cid for cid,c in new_countries.items() if c in BLOCKED_COUNTRIES}
         for cid in sorted(new_cands, key=lambda c: new_scores.get(c,0), reverse=True):
-            if new_scores.get(cid,0) > 0:
+            if new_scores.get(cid,0) > 0 and cid not in new_countries_blocked:
                 pool.append(cid); pool_set.add(cid)
 
     # Persist pool now so it survives a quota failure during collection
@@ -424,8 +485,8 @@ def main():
     state["last_run_utc"]=iso(now())
     save_state(state_file, state)
 
-    uploads=uploads_playlists(y, pool)
-    active=[cid for cid in pool if cid in uploads]
+    uploads,ch_countries=uploads_playlists(y, pool)
+    active=[cid for cid in pool if cid in uploads and ch_countries.get(cid) not in BLOCKED_COUNTRIES]
 
     # Rotate through pool so we don't collect from all channels every run
     max_collect=env_int("MAX_COLLECT_CHANNELS", 200)
