@@ -1,5 +1,39 @@
--- MERGE CONFLICT: video_data table (from yt-data). Separate from videos/claims/narratives.
--- Has transcript, views, video_url, duration_seconds, matched_keywords. Address after debugging.
+-- Narrative API tables (videos, claims, narratives)
+CREATE TABLE IF NOT EXISTS videos (
+  video_id VARCHAR(20) PRIMARY KEY,
+  channel_name TEXT,
+  title TEXT,
+  published_at TIMESTAMPTZ,
+  view_count INTEGER,
+  domain TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS claims (
+  claim_id SERIAL PRIMARY KEY,
+  video_id VARCHAR(20),
+  claim_text TEXT NOT NULL,
+  confidence_score FLOAT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS narratives (
+  narrative_id SERIAL PRIMARY KEY,
+  title TEXT NOT NULL,
+  description TEXT,
+  domain TEXT,
+  claim_count INTEGER DEFAULT 0,
+  first_detected_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS narrative_claims (
+  narrative_id INTEGER REFERENCES narratives(narrative_id),
+  claim_id INTEGER REFERENCES claims(claim_id),
+  added_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (narrative_id, claim_id)
+);
+
+-- Supplemental table for transcript-oriented video metadata.
 CREATE TABLE IF NOT EXISTS video_data (
   id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   title TEXT,

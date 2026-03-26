@@ -33,10 +33,7 @@ class NarrativeCreate(BaseModel):
     domain: Optional[str]
 
 
-# MERGE CONFLICT: video_data table (from yt-data) uses different schema than videos.
-# video_data has: transcript, views, video_url, duration_seconds, matched_keywords.
-# Decide later: unify schemas or keep separate.
-class VideoDataBase(BaseModel):
+class VideoDataCreate(BaseModel):
     title: Optional[str] = None
     video_id: Optional[str] = None
     published_at: Optional[datetime] = None
@@ -48,7 +45,7 @@ class VideoDataBase(BaseModel):
     transcript: Optional[str] = None
 
 
-class VideoDataResponse(VideoDataBase):
+class VideoDataResponse(VideoDataCreate):
     id: int
 
 
@@ -147,8 +144,7 @@ def increment_narrative_count(narrative_id: int):
     execute(sql, (narrative_id,))
 
 
-# MERGE CONFLICT: video_data uses separate table. See create.sql for schema.
-def insert_video_data(payload: VideoDataBase):
+def insert_video_data(payload: VideoDataCreate):
     sql = """
         INSERT INTO video_data (
             title, video_id, published_at, channel_name,
@@ -167,7 +163,7 @@ def insert_video_data(payload: VideoDataBase):
         payload.duration_seconds,
         payload.matched_keywords,
         payload.transcript,
-    ), fetch=True)
+    ), fetch_one=True)
     return row
 
 
@@ -323,11 +319,6 @@ def get_narrative_claims(narrative_id: int):
     return execute(sql, (narrative_id,), fetch_all=True)
 
 
-# -------------------------------
-# MERGE CONFLICT: video_data routes (from yt-data). Uses /video-data path to avoid
-# clashing with /videos. Table schema differs; address after debugging.
-# -------------------------------
-
 @app.get("/video-data", response_model=list[VideoDataResponse])
 def get_all_video_data():
     query = "SELECT * FROM video_data;"
@@ -336,7 +327,7 @@ def get_all_video_data():
 
 
 @app.post("/video-data", response_model=VideoDataResponse)
-def create_video_data(video: VideoDataBase):
+def create_video_data(video: VideoDataCreate):
     row = insert_video_data(video)
     return row
 
@@ -350,7 +341,7 @@ def update_video_data_transcript(video_id: str, data: dict):
         WHERE video_id = %s
         RETURNING *;
     """
-    row = execute(sql, (transcript, video_id), fetch=True)
+    row = execute(sql, (transcript, video_id), fetch_one=True)
     if not row:
         raise HTTPException(status_code=404, detail="Video not found")
     return row
