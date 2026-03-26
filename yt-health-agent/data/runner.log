@@ -991,3 +991,6 @@ YouTube API error: <HttpError 404 when requesting https://youtube.googleapis.com
 [info] pool=6507 active=6360 collecting=200 (offset=2400)
 YouTube API error: <HttpError 404 when requesting https://youtube.googleapis.com/youtube/v3/playlistItems?part=contentDetails&playlistId=UU9AcqDmgigsfE2y-EB9j4_Q&maxResults=50&key=AIzaSyBqYkaEuXRao0Zg-ZlnAa6T8qKXCVcYAMc&alt=json returned "The playlist identified with the request's <code>playlistId</code> parameter cannot be found.". Details: "[{'message': "The playlist identified with the request's <code>playlistId</code> parameter cannot be found.", 'domain': 'youtube.playlistItem', 'reason': 'playlistNotFound', 'location': 'playlistId', 'locationType': 'parameter'}]">
 [runner] Attempt 4 failed, retrying in 1 hour...
+[runner] Attempt 1 at Wed Mar 25 20:06:17 CDT 2026
+Missing YT_API_KEY
+[runner] Attempt 1 failed, retrying in 1 hour...
