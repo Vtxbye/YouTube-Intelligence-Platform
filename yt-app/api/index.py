@@ -1,10 +1,23 @@
+import os
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from dotenv import find_dotenv, load_dotenv
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 from .database import execute
 
 app = FastAPI()
+load_dotenv(find_dotenv())
+FRONTEND_URL = os.getenv("FRONTEND_URL") or ""
+
+app.add_middleware(
+  CORSMiddleware,
+  allow_origins=[FRONTEND_URL],
+  allow_credentials=True,
+  allow_methods=["*"],
+  allow_headers=["*"],
+)
 
 class VideoData(BaseModel):
   title: Optional[str] = None
