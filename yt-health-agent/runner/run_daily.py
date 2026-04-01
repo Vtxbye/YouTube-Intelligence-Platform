@@ -627,10 +627,14 @@ def main():
     state["channel_pool"]=pool
     save_state(state_file,state)
 
+def redact(msg):
+    """Remove key=... query param from URLs in error messages."""
+    return re.sub(r'([?&])key=[^&\s"]+', r'\1key=REDACTED', str(msg))
+
 if __name__=="__main__":
     try:
         main()
     except HttpError as e:
-        raise SystemExit(f"YouTube API error: {e}")
+        raise SystemExit(f"YouTube API error: {redact(e)}")
 
     

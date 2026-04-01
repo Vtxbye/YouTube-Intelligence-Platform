@@ -5,10 +5,14 @@ check_availability.py — removes deleted/private/unavailable videos from result
 Reads all video IDs from the CSV, checks them against the YouTube API in
 batches of 50, and removes any rows whose videos are no longer available.
 """
-import os, csv
+import os, csv, re
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
-FIELDS = ["video_id","title","channel","published_at","duration_seconds","views","url","matched_keywords","transcript"]
+FIELDS = ["video_id","title","channel","published_at","duration_seconds","views","url","matched_keywords"]
+
+def redact(msg):
+    return re.sub(r'([?&])key=[^&\s"]+', r'\1key=REDACTED', str(msg))
 
 def chunks(lst, n):
     for i in range(0, len(lst), n): yield lst[i:i+n]
@@ -52,4 +56,7 @@ def main():
     print(f"[health] Removed {len(removed_ids)} unavailable video(s): {', '.join(removed_ids)}")
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except HttpError as e:
+        raise SystemExit(f"YouTube API error: {redact(e)}")
