@@ -166,7 +166,7 @@ export default function Page() {
 
       <div>
         <h1 className="text-2xl text-black font-semibold">Dashboard Overview</h1>
-        <p className="text-black mt-1">Welcome back! Here's what's happening today.</p>
+        <p className="text-black mt-1">Welcome back! Here&apos;s what&apos;s happening today.</p>
       </div>
 
       <div className="grid grid-cols-2 gap-6">
