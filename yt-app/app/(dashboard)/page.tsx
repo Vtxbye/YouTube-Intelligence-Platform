@@ -13,7 +13,6 @@ import {
   Legend
 } from 'recharts';
 import Link from 'next/link';
-import { videos } from "@/app/data/videos";
 
 const trendingTopics = [
   {
@@ -148,10 +147,9 @@ const revenueData = [
 
 export default function Page() {
 
-  const [selectedTopics, setSelectedTopics] = useState([
-    "Exercise Routine",
-    "Mental Health"
-  ]);
+  const [selectedTopics, setSelectedTopics] = useState(
+    trendingTopics.map(t => t.name)
+  );
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -168,7 +166,7 @@ export default function Page() {
 
       <div>
         <h1 className="text-2xl text-black font-semibold">Dashboard Overview</h1>
-        <p className="text-black mt-1">Welcome back! Here's what's happening today.</p>
+        <p className="text-black mt-1">Welcome back! Here&apos;s what&apos;s happening today.</p>
       </div>
 
       <div className="grid grid-cols-2 gap-6">

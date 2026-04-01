@@ -1,6 +1,5 @@
 'use client';
 
-import { ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, BarChart3, FileText, Settings, Menu, Bell, Search, User } from 'lucide-react';
