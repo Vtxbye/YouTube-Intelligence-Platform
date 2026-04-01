@@ -8,8 +8,11 @@ WORKDIR /app
 
 COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
+RUN pip install pandas yt-dlp
 
 COPY run_daily.py /app/run_daily.py
+COPY fetch_transcripts.py /app/fetch_transcripts.py
+COPY check_availability.py /app/check_availability.py
 COPY entrypoint.sh /app/entrypoint.sh
 COPY run_with_retry.sh /app/run_with_retry.sh
 

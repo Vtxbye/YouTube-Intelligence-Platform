@@ -8,6 +8,8 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 FIELDS = ["video_id","title","channel","published_at","duration_seconds","views","url","matched_keywords"]
+TRANSCRIPTS_FILE = os.getenv("TRANSCRIPTS_FILE", "/data/transcripts.json")
+TRANSCRIPT_STATUS_FILE = os.getenv("TRANSCRIPT_STATUS_FILE", "/data/transcript_status.json")
 
 HEALTH = ["health","healthy","wellness","nutrition","diet","protein","fitness","workout","exercise",
           "sleep","stress","mental","mindfulness","meditation","recovery","lifestyle","habit","longevity",
@@ -65,15 +67,15 @@ def ensure_header(path):
             csv.DictWriter(f,fieldnames=FIELDS).writeheader()
         return
     with open(path,"r",newline="",encoding="utf-8") as f:
-        first = next(csv.reader(f), None)
-    if first == FIELDS: return
-    with open(path,"r",newline="",encoding="utf-8") as f:
-        rows=list(csv.reader(f))
+        reader=csv.DictReader(f)
+        existing_fields=list(reader.fieldnames or [])
+        if existing_fields==FIELDS: return
+        rows=list(reader)
     os.replace(path, path+f".backup_{int(time.time())}")
     with open(path,"w",newline="",encoding="utf-8") as f:
-        w=csv.writer(f); w.writerow(FIELDS)
-        if rows and len(rows[0])==len(FIELDS) and rows[0][0]!="video_id":
-            w.writerows(rows)
+        w=csv.DictWriter(f,fieldnames=FIELDS,extrasaction="ignore")
+        w.writeheader()
+        w.writerows(rows)
 
 def prune(path, months_back):
     if not os.path.exists(path): return 0
@@ -109,6 +111,47 @@ def dedup_csv(path):
         os.replace(tmp,path)
         print(f"[dedup] Removed {removed} duplicate rows")
     return removed
+
+def check_and_remove_unavailable(path, y):
+    """Remove rows for videos that are deleted, private, or otherwise unavailable."""
+    if not os.path.exists(path): return 0
+    ensure_header(path)
+    with open(path,"r",newline="",encoding="utf-8") as f:
+        all_rows=list(csv.DictReader(f))
+
+    all_ids=[row["video_id"] for row in all_rows if (row.get("video_id") or "").strip()]
+    if not all_ids: return 0
+
+    available=set()
+    for batch in chunks(all_ids, 50):
+        resp=y.videos().list(part="status", id=",".join(batch)).execute()
+        for item in resp.get("items", []):
+            available.add(item["id"])
+
+    removed_ids={vid for vid in all_ids if vid not in available}
+    if not removed_ids:
+        print(f"[health] All {len(all_ids)} videos still available")
+        return 0
+
+    kept=[row for row in all_rows if (row.get("video_id") or "").strip() not in removed_ids]
+    tmp=path+".tmp"
+    with open(tmp,"w",newline="",encoding="utf-8") as f:
+        w=csv.DictWriter(f,fieldnames=FIELDS,extrasaction="ignore"); w.writeheader(); w.writerows(kept)
+    os.replace(tmp, path)
+
+    # Remove unavailable videos from transcripts.json and transcript_status.json
+    for fpath in (TRANSCRIPTS_FILE, TRANSCRIPT_STATUS_FILE):
+        if not os.path.exists(fpath): continue
+        try:
+            with open(fpath,"r",encoding="utf-8") as f: tx=json.load(f)
+            pruned={vid: t for vid, t in tx.items() if vid not in removed_ids}
+            if len(pruned) < len(tx):
+                with open(fpath,"w",encoding="utf-8") as f: json.dump(pruned,f,indent=2,ensure_ascii=False)
+        except Exception as e:
+            print(f"[warn] Could not update {os.path.basename(fpath)}: {e}")
+
+    print(f"[health] Removed {len(removed_ids)} unavailable video(s): {', '.join(removed_ids)}")
+    return len(removed_ids)
 
 def count_csv_rows(path):
     if not os.path.exists(path): return 0
@@ -441,10 +484,10 @@ def main():
 
     # Skip if already ran successfully today (UTC date) — prevents double-runs
     # when the container restarts on a day the script already completed.
-    last_run=ts(state.get("last_run_utc") or "")
-    if last_run and last_run.date() == now().date():
-        print(f"[skip] Already ran today ({state['last_run_utc']}), skipping")
-        return
+    #last_run=ts(state.get("last_run_utc") or "")
+    #if last_run and last_run.date() == now().date():
+        #print(f"[skip] Already ran today ({state['last_run_utc']}), skipping")
+        #return
 
     # Compute open slots without touching the file yet — so a network failure
     # never leaves the DB pruned but unfilled.
@@ -473,6 +516,8 @@ def main():
     print(f"[info] discovery publishedAfter={published_after}")
 
     y=build("youtube","v3",developerKey=api_key)
+
+    check_and_remove_unavailable(out_csv, y)
 
     neg_q="-kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr"
     discovery_queries=[f"{k} {neg_q}" for k in keywords]
