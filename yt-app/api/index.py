@@ -79,6 +79,10 @@ def increment_narrative_count(narrative_id: int):
   execute(sql, (narrative_id,))
 
 # Check Endpoints
+@app.get("/")
+def landing():
+  return {"status": "success", "message": "API Root"}
+
 @app.get("/api/healthchecker")
 def healthchecker():
   return {"status": "success", "message": "Integrated FastAPI Framework with Next.js"}
