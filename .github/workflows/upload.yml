@@ -24,13 +24,13 @@ jobs:
           python-version: 3.13
 
       - name: Install dependencies
-        runs: |
+        run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
         
       - name: Run all uploaders
         env:
           NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
-        runs: |
+        run: |
           python ./uploaders/video_uploader.py
           python ./uploaders/transcript_uploader.py
