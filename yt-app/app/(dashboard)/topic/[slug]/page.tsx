@@ -30,6 +30,9 @@ export default function TopicPage() {
       .join(' ') || '';
 
   useEffect(() => {
+
+    console.log("FETCHING VIDEOS...");
+    
     async function fetchVideos() {
       try {
         const res = await fetch('http://localhost:8000/video-data');
