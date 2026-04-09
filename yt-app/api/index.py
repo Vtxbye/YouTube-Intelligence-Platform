@@ -39,6 +39,16 @@ class ClaimRead(Claim):
   claim_id: int
   created_at: datetime
 
+class Comment(BaseModel):
+  comment_id: int
+  video_id: int
+  comment_text: str
+  sentiment_label: Optional[str] = None
+  sentiment_score: Optional[float] = None
+
+class CommentRead(Comment):
+  created_at: datetime
+
 class Narrative(BaseModel):
   narrative_text: str
   domain: Optional[str] = None
@@ -176,6 +186,81 @@ def get_claim(claim_id: int):
     """
 
     return execute(sql, (claim_id,), fetch_one=True)
+
+@app.get("/comments", response_model=list[CommentRead])
+def get_comments(video_id: int | None = None, limit: int = 50, offset: int = 0):
+
+  if video_id is not None:
+    sql = """
+      SELECT comment_id, video_id, comment_text, sentiment_label, sentiment_score, created_at
+      FROM comments
+      WHERE video_id = %s
+      ORDER BY created_at DESC
+      LIMIT %s OFFSET %s;
+    """
+
+    return execute(sql, (video_id, limit, offset), fetch_all=True)
+
+  sql = """
+    SELECT comment_id, video_id, comment_text, sentiment_label, sentiment_score, created_at
+    FROM comments
+    ORDER BY created_at DESC
+    LIMIT %s OFFSET %s;
+  """
+
+  return execute(sql, (limit, offset), fetch_all=True)
+
+@app.get("/videos/{video_id}/comments", response_model=list[CommentRead])
+def get_video_comments(video_id: int, limit: int = 50, offset: int = 0):
+  sql = """
+    SELECT comment_id, video_id, comment_text, sentiment_label, sentiment_score, created_at
+    FROM comments
+    WHERE video_id = %s
+    ORDER BY created_at DESC
+    LIMIT %s OFFSET %s;
+  """
+
+  return execute(sql, (video_id, limit, offset), fetch_all=True)
+
+@app.get("/comments/{comment_id}", response_model=CommentRead)
+def get_comment(comment_id: int):
+  sql = """
+    SELECT comment_id, video_id, comment_text, sentiment_label, sentiment_score, created_at
+    FROM comments
+    WHERE comment_id = %s;
+  """
+
+  row = execute(sql, (comment_id,), fetch_one=True)
+
+  if not row:
+    raise HTTPException(status_code=404, detail="Comment not found")
+
+  return row
+
+@app.post("/comments", response_model=CommentRead)
+def create_comment(payload: Comment):
+  sql = """
+    INSERT INTO comments (
+      comment_id,
+      video_id,
+      comment_text,
+      sentiment_label,
+      sentiment_score
+    )
+    VALUES (%s, %s, %s, %s, %s)
+    RETURNING comment_id, video_id, comment_text, sentiment_label, sentiment_score, created_at;
+  """
+
+  params = (
+    payload.comment_id,
+    payload.video_id,
+    payload.comment_text,
+    payload.sentiment_label,
+    payload.sentiment_score,
+  )
+
+  row = execute(sql, params, fetch_one=True)
+  return row
 
 @app.post("/claims", response_model=ClaimRead)
 def create_claim(payload: Claim):

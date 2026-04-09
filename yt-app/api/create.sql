@@ -21,6 +21,15 @@ CREATE TABLE IF NOT EXISTS claims (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS comments (
+  comment_id BIGINT PRIMARY KEY,
+  video_id BIGINT NOT NULL,
+  comment_text TEXT NOT NULL,
+  sentiment_label VARCHAR(20),
+  sentiment_score FLOAT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS narratives (
   narrative_id SERIAL PRIMARY KEY,
   narrative_text TEXT NOT NULL,
