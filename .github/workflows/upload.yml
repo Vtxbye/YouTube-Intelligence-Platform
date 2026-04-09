@@ -34,3 +34,4 @@ jobs:
         runs: |
           python ./uploaders/video_uploader.py
           python ./uploaders/transcript_uploader.py
+          python ./uploaders/narrative_claim_uploader.py
