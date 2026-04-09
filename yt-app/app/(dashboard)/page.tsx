@@ -13,6 +13,7 @@ import {
   Legend
 } from 'recharts';
 import Link from 'next/link';
+import { videos } from "@/app/data/videos";
 
 const trendingTopics = [
   {
@@ -147,9 +148,10 @@ const revenueData = [
 
 export default function Page() {
 
-  const [selectedTopics, setSelectedTopics] = useState(
-    trendingTopics.map(t => t.name)
-  );
+  const [selectedTopics, setSelectedTopics] = useState([
+    "Exercise Routine",
+    "Mental Health"
+  ]);
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
