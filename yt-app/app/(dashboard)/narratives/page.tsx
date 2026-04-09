@@ -139,10 +139,21 @@ const mockNarratives = [
   }
 ];
 
+interface ClaimVideo {
+  video_id: string;
+  claims: string[];
+}
+
+interface Narrative {
+  id: number;
+  narrative: string;
+  videos: ClaimVideo[];
+}
+
 export default function Page() {
 
-  const [narratives, setNarratives] = useState<any[]>([]);
-  const [selectedNarrative, setSelectedNarrative] = useState<any>(null);
+  const [narratives] = useState<Narrative[]>(mockNarratives);
+  const [selectedNarrative, setSelectedNarrative] = useState<Narrative | null>(mockNarratives[0]);
 
 //   useEffect(() => {
 //     fetch('http://localhost:8000/api/narratives')
@@ -150,7 +161,7 @@ export default function Page() {
 //       .then(res => {
 //         console.log("API:", res);
 
-//         // Fix your previous error here 👇
+//         // Fix your previous error here 
 //         const data = Array.isArray(res)
 //           ? res
 //           : Array.isArray(res.narratives)
@@ -162,10 +173,10 @@ export default function Page() {
 //       });
 //   }, []);
 
-useEffect(() => {
-  setNarratives(mockNarratives);
-  setSelectedNarrative(mockNarratives[0]);
-}, []);
+// useEffect(() => {
+//   setNarratives(mockNarratives);
+//   setSelectedNarrative(mockNarratives[0]);
+// }, []);
 
   return (
     <div className="space-y-6">
