@@ -263,7 +263,7 @@ export default function Page() {
               {/* Videos */}
               <div className="space-y-6">
 
-                {selectedNarrative.videos?.map((video: any, i: number) => (
+                {selectedNarrative.videos?.map((video: ClaimVideo, i: number) => (
 
                   <div
                     key={i}
