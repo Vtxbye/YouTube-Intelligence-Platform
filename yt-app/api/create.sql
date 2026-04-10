@@ -35,3 +35,13 @@ CREATE TABLE IF NOT EXISTS narrative_claims (
   added_at TIMESTAMPTZ DEFAULT NOW(),
   PRIMARY KEY (narrative_id, claim_id)
 );
+
+CREATE TABLE IF NOT EXIST comments (
+  comment_id SERIAL PRIMARY KEY,
+  video_id VARCHAR(11) NOT NULL REFERENCES video_data(video_id),
+  comment_text TEXT,
+  author TEXT,
+  likes INTEGER DEFAULT 0,
+  published_at TIMESTAMPTZ,
+  sentiment_score double precision DEFAULT 0,
+)
