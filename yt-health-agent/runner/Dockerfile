@@ -12,6 +12,7 @@ RUN pip install pandas yt-dlp
 
 COPY run_daily.py /app/run_daily.py
 COPY fetch_transcripts.py /app/fetch_transcripts.py
+COPY fetch_comments.py /app/fetch_comments.py
 COPY check_availability.py /app/check_availability.py
 COPY entrypoint.sh /app/entrypoint.sh
 COPY run_with_retry.sh /app/run_with_retry.sh
