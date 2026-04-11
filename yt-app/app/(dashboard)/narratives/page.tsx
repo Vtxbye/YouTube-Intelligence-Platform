@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 interface Narrative {
   narrative_id: number;
   narrative_text: string;
@@ -20,7 +22,7 @@ export default function Page() {
   useEffect(() => {
     async function fetchNarratives() {
       try {
-        const res = await fetch('http://localhost:8000/narratives');
+        const res = await fetch(`${API_URL}/narratives`);
         const data = await res.json();
         const list = Array.isArray(data)
           ? data
