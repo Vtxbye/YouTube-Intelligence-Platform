@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { TrendingUp } from 'lucide-react';
 import { YouTubeEmbed } from '@next/third-parties/google';
+import Link from 'next/link';
 
-const mockNarratives = [
+export const mockNarratives = [
   {
     id: 1,
     narrative: "Exercise and mental state significantly influence physical performance and long-term metabolic health.",
@@ -173,10 +174,32 @@ export default function Page() {
 //       });
 //   }, []);
 
+<<<<<<< HEAD
 // useEffect(() => {
 //   setNarratives(mockNarratives);
 //   setSelectedNarrative(mockNarratives[0]);
 // }, []);
+=======
+useEffect(() => {
+  async function fetchNarratives() {
+    try {
+      const res = await fetch(
+        'http://localhost:8000/narratives'
+      );
+
+      const data = await res.json();
+
+      console.log("API narratives:", data);
+
+      setNarratives(data);
+    } catch (err) {
+      console.error("Error fetching narratives:", err);
+    }
+  }
+
+  fetchNarratives();
+}, []);
+>>>>>>> cda86bf90ae0167c34f80f71620a071fca66b61d
 
   return (
     <div className="space-y-6">
@@ -189,7 +212,7 @@ export default function Page() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
+      <div className="max-w-2xl">
 
         {/* LEFT: Narratives List (like Trending Topics) */}
         <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -210,30 +233,20 @@ export default function Page() {
 
             {narratives.map((narrative, index) => (
 
-              <li key={narrative.id || index}>
-
-                <button
-                  onClick={() => setSelectedNarrative(narrative)}
-                  className={`w-full text-left p-3 rounded-lg transition ${
-                    selectedNarrative?.id === narrative.id
-                      ? 'bg-gray-100'
-                      : 'hover:bg-gray-50'
-                  }`}
+              <li key={narrative.narrative_id}>
+                <Link
+                    href={`/narratives/${narrative.narrative_id}`}
+                    className="block p-3 rounded-lg hover:bg-gray-50"
                 >
-
-                  <div>
                     <span className="text-gray-800 font-medium">
-                      {narrative.id}
+                    {narrative.narrative_text}
                     </span>
 
-                    <p className="text-gray-500 text-sm line-clamp-2">
-                      {narrative.narrative}
+                    <p className="text-sm text-gray-500">
+                    {narrative.claim_count} claims
                     </p>
-                  </div>
-
-                </button>
-
-              </li>
+                </Link>
+                </li>
 
             ))}
 
@@ -241,6 +254,7 @@ export default function Page() {
 
         </div>
 
+<<<<<<< HEAD
         {/* RIGHT: Narrative Details (like Chart Area) */}
         <div className="bg-white rounded-lg border border-gray-200 p-6">
 
@@ -298,6 +312,9 @@ export default function Page() {
           )}
 
         </div>
+=======
+        
+>>>>>>> cda86bf90ae0167c34f80f71620a071fca66b61d
 
       </div>
 
