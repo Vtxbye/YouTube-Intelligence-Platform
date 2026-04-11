@@ -5,6 +5,8 @@ on:
     - cron: '0 8 * * *'
   workflow_dispatch:
 
+if: github.repository != 'Vtxbye/YouTube-Intelligence-Platform'
+
 jobs:
   run_uploaders:
     runs-on: ubuntu-latest
