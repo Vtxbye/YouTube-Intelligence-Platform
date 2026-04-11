@@ -267,3 +267,17 @@ def attach_claim(narrative_id: int, claim_id: int):
   link_narrative_claim(narrative_id, claim_id)
   increment_narrative_count(narrative_id)
   return {"status": "linked"}
+
+@app.get("/narrative-claim-video")
+def get_narrative_claim_video(limit: int | None = None, offset: int | None = None):
+
+  if limit is None and offset is None:
+    sql = "SELECT * FROM narrative_claim_video_view;"
+    return execute(sql, fetch_all=True)
+
+  sql = """
+    SELECT *
+    FROM narrative_claim_video_view
+    LIMIT %s OFFSET %s;
+  """
+  return execute(sql, (limit, offset), fetch_all=True)

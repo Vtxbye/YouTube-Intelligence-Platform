@@ -167,7 +167,7 @@ useEffect(() => {
   async function fetchNarratives() {
     try {
       const res = await fetch(
-        'https://youtube-intelligence-platform-api.onrender.com/narratives'
+        'http://localhost:8000/narratives'
       );
 
       const data = await res.json();

@@ -8,6 +8,8 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 FIELDS = ["video_id","title","channel","published_at","duration_seconds","views","url","matched_keywords"]
+TRANSCRIPTS_FILE = os.getenv("TRANSCRIPTS_FILE", "/data/transcripts.json")
+TRANSCRIPT_STATUS_FILE = os.getenv("TRANSCRIPT_STATUS_FILE", "/data/transcript_status.json")
 
 HEALTH = ["health","healthy","wellness","nutrition","diet","protein","fitness","workout","exercise",
           "sleep","stress","mental","mindfulness","meditation","recovery","lifestyle","habit","longevity",
@@ -65,15 +67,15 @@ def ensure_header(path):
             csv.DictWriter(f,fieldnames=FIELDS).writeheader()
         return
     with open(path,"r",newline="",encoding="utf-8") as f:
-        first = next(csv.reader(f), None)
-    if first == FIELDS: return
-    with open(path,"r",newline="",encoding="utf-8") as f:
-        rows=list(csv.reader(f))
+        reader=csv.DictReader(f)
+        existing_fields=list(reader.fieldnames or [])
+        if existing_fields==FIELDS: return
+        rows=list(reader)
     os.replace(path, path+f".backup_{int(time.time())}")
     with open(path,"w",newline="",encoding="utf-8") as f:
-        w=csv.writer(f); w.writerow(FIELDS)
-        if rows and len(rows[0])==len(FIELDS) and rows[0][0]!="video_id":
-            w.writerows(rows)
+        w=csv.DictWriter(f,fieldnames=FIELDS,extrasaction="ignore")
+        w.writeheader()
+        w.writerows(rows)
 
 def prune(path, months_back):
     if not os.path.exists(path): return 0
@@ -110,6 +112,47 @@ def dedup_csv(path):
         print(f"[dedup] Removed {removed} duplicate rows")
     return removed
 
+def check_and_remove_unavailable(path, y):
+    """Remove rows for videos that are deleted, private, or otherwise unavailable."""
+    if not os.path.exists(path): return 0
+    ensure_header(path)
+    with open(path,"r",newline="",encoding="utf-8") as f:
+        all_rows=list(csv.DictReader(f))
+
+    all_ids=[row["video_id"] for row in all_rows if (row.get("video_id") or "").strip()]
+    if not all_ids: return 0
+
+    available=set()
+    for batch in chunks(all_ids, 50):
+        resp=y.videos().list(part="status", id=",".join(batch)).execute()
+        for item in resp.get("items", []):
+            available.add(item["id"])
+
+    removed_ids={vid for vid in all_ids if vid not in available}
+    if not removed_ids:
+        print(f"[health] All {len(all_ids)} videos still available")
+        return 0
+
+    kept=[row for row in all_rows if (row.get("video_id") or "").strip() not in removed_ids]
+    tmp=path+".tmp"
+    with open(tmp,"w",newline="",encoding="utf-8") as f:
+        w=csv.DictWriter(f,fieldnames=FIELDS,extrasaction="ignore"); w.writeheader(); w.writerows(kept)
+    os.replace(tmp, path)
+
+    # Remove unavailable videos from transcripts.json and transcript_status.json
+    for fpath in (TRANSCRIPTS_FILE, TRANSCRIPT_STATUS_FILE):
+        if not os.path.exists(fpath): continue
+        try:
+            with open(fpath,"r",encoding="utf-8") as f: tx=json.load(f)
+            pruned={vid: t for vid, t in tx.items() if vid not in removed_ids}
+            if len(pruned) < len(tx):
+                with open(fpath,"w",encoding="utf-8") as f: json.dump(pruned,f,indent=2,ensure_ascii=False)
+        except Exception as e:
+            print(f"[warn] Could not update {os.path.basename(fpath)}: {e}")
+
+    print(f"[health] Removed {len(removed_ids)} unavailable video(s): {', '.join(removed_ids)}")
+    return len(removed_ids)
+
 def count_csv_rows(path):
     if not os.path.exists(path): return 0
     with open(path,"r",newline="",encoding="utf-8") as f:
@@ -125,9 +168,17 @@ def backup_csv(path):
     dest=f"{path}.backup_{suffix}"
     shutil.copy2(path, dest)
     print(f"[backup] Saved {dest}")
-    # Prune old backups, keeping only the 2 most recent (sort by mtime)
+    # Prune old backups, keeping only the 2 most recent (sort by backup date)
+    def _backup_sort_key(p):
+        suffix = p.rsplit(".backup_", 1)[-1]
+        try:
+            # MMDDYYYY format
+            return datetime.strptime(suffix, "%m%d%Y")
+        except ValueError:
+            # unix timestamp fallback — treat as very old
+            return datetime.min
     pattern=f"{path}.backup_*"
-    backups=sorted(_glob.glob(pattern), key=os.path.getmtime)
+    backups=sorted(_glob.glob(pattern), key=_backup_sort_key)
     for old in backups[:-2]:
         os.remove(old)
         print(f"[backup] Removed old backup {old}")
@@ -314,7 +365,13 @@ def uploads_playlists(y, channel_ids):
     return playlists, countries
 
 def playlist_page(y, plid, token):
-    resp=y.playlistItems().list(part="contentDetails", playlistId=plid, maxResults=50, pageToken=token).execute()
+    try:
+        resp=y.playlistItems().list(part="contentDetails", playlistId=plid, maxResults=50, pageToken=token).execute()
+    except HttpError as e:
+        if e.resp.status == 404:
+            print(f"[warn] Playlist not found, skipping: {plid}")
+            return [], None
+        raise
     items=[]
     for it in resp.get("items",[]):
         cd=it.get("contentDetails",{}) or {}
@@ -427,10 +484,10 @@ def main():
 
     # Skip if already ran successfully today (UTC date) — prevents double-runs
     # when the container restarts on a day the script already completed.
-    last_run=ts(state.get("last_run_utc") or "")
-    if last_run and last_run.date() == now().date():
-        print(f"[skip] Already ran today ({state['last_run_utc']}), skipping")
-        return
+    #last_run=ts(state.get("last_run_utc") or "")
+    #if last_run and last_run.date() == now().date():
+        #print(f"[skip] Already ran today ({state['last_run_utc']}), skipping")
+        #return
 
     # Compute open slots without touching the file yet — so a network failure
     # never leaves the DB pruned but unfilled.
@@ -459,6 +516,8 @@ def main():
     print(f"[info] discovery publishedAfter={published_after}")
 
     y=build("youtube","v3",developerKey=api_key)
+
+    check_and_remove_unavailable(out_csv, y)
 
     neg_q="-kids -toddler -nursery -rhyme -cartoon -toy -cocomelon -baby -vlog -haul -unboxing -grwm -asmr"
     discovery_queries=[f"{k} {neg_q}" for k in keywords]
@@ -568,10 +627,14 @@ def main():
     state["channel_pool"]=pool
     save_state(state_file,state)
 
+def redact(msg):
+    """Remove key=... query param from URLs in error messages."""
+    return re.sub(r'([?&])key=[^&\s"]+', r'\1key=REDACTED', str(msg))
+
 if __name__=="__main__":
     try:
         main()
     except HttpError as e:
-        raise SystemExit(f"YouTube API error: {e}")
+        raise SystemExit(f"YouTube API error: {redact(e)}")
 
     

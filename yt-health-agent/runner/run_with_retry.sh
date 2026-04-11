@@ -12,6 +12,8 @@ while [ $attempt -le $((MAX_RETRIES + 1)) ]; do
     /usr/local/bin/python3 /app/run_daily.py >> /data/runner.log 2>&1
     if [ $? -eq 0 ]; then
         echo "[runner] Attempt $attempt succeeded" >> /data/runner.log 2>&1
+        echo "[runner] Fetching transcripts..." >> /data/runner.log 2>&1
+        /usr/local/bin/python3 /app/fetch_transcripts.py >> /data/runner.log 2>&1
         exit 0
     fi
     if [ $attempt -le $MAX_RETRIES ]; then
