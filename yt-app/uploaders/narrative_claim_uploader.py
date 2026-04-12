@@ -122,7 +122,7 @@ def upload_data(narratives):
 
 def main():
   script_dir = Path(__file__).resolve().parent
-  data_file = script_dir.parent / "data" / "generated_narratives_and_claims_formatted.csv"
+  data_file = script_dir.parent.parent / "yt-health-agent" / "data" / "generated_narratives_and_claims_formatted.csv"
 
   narratives = parse_csv(data_file)
   upload_data(narratives)
