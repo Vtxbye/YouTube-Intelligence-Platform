@@ -26,7 +26,7 @@ GEMINI_MODEL        = "gemini-2.5-flash"
 GEMINI_RETRIES      = 3
 GEMINI_RATE_MAX_WAIT = 300  # seconds — delays longer than this indicate daily quota exhaustion
 BATCH_SIZE          = 50
-OLLAMA_TIMEOUT      = 180
+OLLAMA_TIMEOUT      = 360
 OLLAMA_RETRIES      = 3
 
 
@@ -307,6 +307,8 @@ def _request_narrative_ollama(batch: List[ClaimRecord]) -> str:
         raise RuntimeError(f"Ollama HTTP {e.code}: {msg}") from e
     except error.URLError as e:
         raise RuntimeError(f"Cannot reach Ollama at {OLLAMA_URL}: {e}") from e
+    except TimeoutError as e:
+        raise RuntimeError(f"Ollama timed out after {OLLAMA_TIMEOUT}s") from e
 
     narrative = _clean_narrative((body.get("response") or "").strip())
     if not narrative:
