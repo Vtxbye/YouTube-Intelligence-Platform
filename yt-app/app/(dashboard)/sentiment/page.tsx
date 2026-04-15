@@ -12,51 +12,91 @@ type Video = {
 };
 
 export default function SentimentPage() {
-  const [videos, setVideos] = useState<Video[]>([]);
+  // const [videos, setVideos] = useState<Video[]>([]); 
   const [selectedVideoId, setSelectedVideoId] = useState<number | null>(null);
 
-  useEffect(() => {
-    const mockData: Video[] = [
-      {
-        id: 1,
-        title: "AI in Healthcare Trends",
-        channel: "Health Insights",
-        timestamp: "2 hours ago",
-        sentiment: "Positive 😊",
-        comments: [
-          "Very informative breakdown",
-          "This was helpful",
-          "Loved the explanation",
-        ],
-      },
-      {
-        id: 2,
-        title: "Vaccine Debate on Social Media",
-        channel: "Medical Watch",
-        timestamp: "5 hours ago",
-        sentiment: "Negative 😡",
-        comments: [
-          "This seems misleading",
-          "Needs fact checking",
-          "I don’t trust this source",
-        ],
-      },
-      {
-        id: 3,
-        title: "Mental Health Awareness Update",
-        channel: "Mind Matters",
-        timestamp: "1 day ago",
-        sentiment: "Neutral 😐",
-        comments: [
-          "Interesting perspective",
-          "Mixed opinions here",
-          "Not sure how to feel about this",
-        ],
-      },
-    ];
+  // For now while not connecting to db
+  const [videos, setVideos] = useState<Video[]>(() => [
+  {
+    id: 1,
+    title: "AI in Healthcare Trends",
+    channel: "Health Insights",
+    timestamp: "2 hours ago",
+    sentiment: "Positive 😊",
+    comments: [
+      "Very informative breakdown",
+      "This was helpful",
+      "Loved the explanation",
+    ],
+  },
+  {
+    id: 2,
+    title: "Vaccine Debate on Social Media",
+    channel: "Medical Watch",
+    timestamp: "5 hours ago",
+    sentiment: "Negative 😡",
+    comments: [
+      "This seems misleading",
+      "Needs fact checking",
+      "I don’t trust this source",
+    ],
+  },
+  {
+    id: 3,
+    title: "Mental Health Awareness Update",
+    channel: "Mind Matters",
+    timestamp: "1 day ago",
+    sentiment: "Neutral 😐",
+    comments: [
+      "Interesting perspective",
+      "Mixed opinions here",
+      "Not sure how to feel about this",
+    ],
+  },
+]);
 
-    setVideos(mockData);
-  }, []);
+  // useEffect(() => {
+  //   const mockData: Video[] = [
+  //     {
+  //       id: 1,
+  //       title: "AI in Healthcare Trends",
+  //       channel: "Health Insights",
+  //       timestamp: "2 hours ago",
+  //       sentiment: "Positive 😊",
+  //       comments: [
+  //         "Very informative breakdown",
+  //         "This was helpful",
+  //         "Loved the explanation",
+  //       ],
+  //     },
+  //     {
+  //       id: 2,
+  //       title: "Vaccine Debate on Social Media",
+  //       channel: "Medical Watch",
+  //       timestamp: "5 hours ago",
+  //       sentiment: "Negative 😡",
+  //       comments: [
+  //         "This seems misleading",
+  //         "Needs fact checking",
+  //         "I don’t trust this source",
+  //       ],
+  //     },
+  //     {
+  //       id: 3,
+  //       title: "Mental Health Awareness Update",
+  //       channel: "Mind Matters",
+  //       timestamp: "1 day ago",
+  //       sentiment: "Neutral 😐",
+  //       comments: [
+  //         "Interesting perspective",
+  //         "Mixed opinions here",
+  //         "Not sure how to feel about this",
+  //       ],
+  //     },
+  //   ];
+
+  //   setVideos(mockData);
+  // }, []);
 
   const handleCardClick = (id: number) => {
     setSelectedVideoId((prev) => (prev === id ? null : id));
