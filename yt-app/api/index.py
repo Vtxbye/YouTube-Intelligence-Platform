@@ -107,9 +107,9 @@ def db_check():
 
 # Endpoints
 @app.get("/videos", response_model=list[VideoData])
-def get_videos(limit: int | None = None, offset: int | None = None):
+def get_videos(limit: int = 50, offset: int = 0, all: bool = False):
 
-  if limit is None and offset is None:
+  if all:
     sql = "SELECT * FROM video_data;"
     return execute(sql, fetch_all=True)
 
@@ -121,7 +121,7 @@ def get_videos(limit: int | None = None, offset: int | None = None):
   """
   return execute(sql, (limit, offset), fetch_all=True)
   
-@app.post("/videos", response_model=VideoData)
+@app.post("/videos")
 def create_video(video: VideoData):
   query = """
     INSERT INTO video_data (
@@ -129,7 +129,8 @@ def create_video(video: VideoData):
       views, video_url, duration_seconds, matched_keywords, transcript
     )
     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-    RETURNING *;
+    ON CONFLICT (video_id) DO NOTHING;
+    RETURNING video_id;
   """
 
   params = (
@@ -145,7 +146,11 @@ def create_video(video: VideoData):
   )
 
   row = execute(query, params, fetch_one=True)
-  return row
+
+  if row:
+    return {"status": "inserted"}
+  else:
+    return {"status": "skipped"}
 
 @app.patch("/videos/{video_id}/transcript", response_model=VideoData)
 def update_transcript(video_id: str, data: dict):

@@ -18,16 +18,10 @@ def parallel_map(func, items, max_workers=3):
         print(f"Error: {e}")
 
 def upload_single_video(args):
-  session, v, existing_ids = args
-  vid = v["video_id"]
-
-  if vid in existing_ids:
-    print(f"Skipping duplicate: {vid} ({v['title']})")
-    return
-
+  session, v = args
   payload = {
     "title": v["title"],
-    "video_id": vid,
+    "video_id": v["video_id"],
     "published_at": v["published_at"],
     "channel_name": v["channel"],
     "views": int(v["views"] or 0),
@@ -38,10 +32,11 @@ def upload_single_video(args):
   }
 
   r = session.post(f"{API_URL}/videos", json=payload)
-  if r.status_code == 200:
+  data = r.json()
+  if data.get("status") == "inserted":
     print(f"Uploaded: {v['title']}")
   else:
-    print(f"Error: {v['title']} — {r.text}")
+    print(f"Skipped duplicate: {v['title']}")
 
 def upload_videos():
   session = requests.Session()
@@ -52,11 +47,7 @@ def upload_videos():
   with open(data_file, "r", encoding="utf-8") as f:
     reader = csv.DictReader(f)
     videos = list(reader)
-
-  r = session.get(f"{API_URL}/videos")
-  existing_ids = {v["video_id"] for v in r.json()}
-
-  items = [(session, v, existing_ids) for v in videos]
+  items = [(session, v) for v in videos]
   parallel_map(upload_single_video, items, max_workers=3)
 
 if __name__ == "__main__":
