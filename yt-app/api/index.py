@@ -5,11 +5,15 @@ from dotenv import find_dotenv, load_dotenv
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
+from .auth import configure_firebase_auth
 from .database import execute
+from .firebase_identity import router as firebase_auth_router
 
 app = FastAPI()
 load_dotenv(find_dotenv())
 FRONTEND_URL = os.getenv("FRONTEND_URL") or ""
+
+configure_firebase_auth(app)
 
 app.add_middleware(
   CORSMiddleware,
@@ -18,6 +22,8 @@ app.add_middleware(
   allow_methods=["*"],
   allow_headers=["*"],
 )
+
+app.include_router(firebase_auth_router)
 
 # Models
 class VideoData(BaseModel):
@@ -107,7 +113,7 @@ def db_check():
 
 # Endpoints
 @app.get("/videos", response_model=list[VideoData])
-def get_videos(limit: int | None = None, offset: int | None = None):
+def get_videos(limit: Optional[int] = None, offset: Optional[int] = None):
 
   if limit is None and offset is None:
     sql = "SELECT * FROM video_data;"
@@ -188,7 +194,7 @@ def get_claim(claim_id: int):
     return execute(sql, (claim_id,), fetch_one=True)
 
 @app.get("/comments", response_model=list[CommentRead])
-def get_comments(video_id: int | None = None, limit: int = 50, offset: int = 0):
+def get_comments(video_id: Optional[int] = None, limit: int = 50, offset: int = 0):
 
   if video_id is not None:
     sql = """

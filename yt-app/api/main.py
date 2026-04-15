@@ -3,10 +3,14 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 
+from .auth import configure_firebase_auth
 from .database import execute
+from .firebase_identity import router as firebase_auth_router
 
 from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI(title="YouTube Narrative API")
+
+configure_firebase_auth(app)
 
 app.add_middleware(
     CORSMiddleware,
@@ -15,6 +19,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(firebase_auth_router)
 
 # -------------------------------
 # REQUEST MODELS
