@@ -151,6 +151,12 @@ def create_video(video: VideoData):
     return {"status": "inserted"}
   else:
     return {"status": "skipped"}
+  
+@app.get("/videos/transcript-status")
+def get_transcript_status():
+  sql = "SELECT video_id, transcript IS NOT NULL AS has_transcript FROM video_data;"
+  row = execute(sql, fetch_all=True)
+  return row
 
 @app.patch("/videos/{video_id}/transcript", response_model=VideoData)
 def update_transcript(video_id: str, data: dict):
@@ -160,14 +166,14 @@ def update_transcript(video_id: str, data: dict):
     UPDATE video_data
     SET transcript = %s
     WHERE video_id = %s
-    RETURNING *;
+    RETURNING video_id;
   """
 
   row = execute(query, (transcript, video_id), fetch_one=True)
-  if not row:
-    raise HTTPException(status_code=404, detail="Video not found")
+  if row:
+    return {"status": "updated"}
 
-  return row
+  return {"status": "skipped"}
 
 @app.get("/videos/{video_id}/claims")
 def get_video_claims(video_id: str):

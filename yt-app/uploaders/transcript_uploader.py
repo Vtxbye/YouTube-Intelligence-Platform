@@ -21,7 +21,7 @@ def update_single_transcript(args):
   session, video, transcript_map = args
   vid = video["video_id"]
 
-  if video.get("transcript"):
+  if video["has_transcript"]:
     return
 
   if vid not in transcript_map:
@@ -32,7 +32,11 @@ def update_single_transcript(args):
   r = session.patch(f"{API_URL}/videos/{vid}/transcript", json=payload)
 
   if r.status_code == 200:
-    print(f"Updated transcript for {vid}")
+    status = r.json().get("status")
+    if status == "updated":
+      print(f"Updated transcript for {vid}")
+    else:
+      print(f"Skipped transcript for {vid}")
   else:
     print(f"Error updating {vid}: {r.text}")
 
@@ -48,7 +52,7 @@ def update_transcripts():
     transcript_map = json.load(f)
 
   session = requests.Session()
-  r = session.get(f"{API_URL}/videos")
+  r = session.get(f"{API_URL}/videos/transcript-status")
   videos = r.json()
 
   items = [(session, v, transcript_map) for v in videos]
