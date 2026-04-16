@@ -166,7 +166,7 @@ def get_transcript_status():
   row = execute(sql, fetch_all=True)
   return row
 
-@app.patch("/videos/{video_id}/transcript", response_model=VideoData)
+@app.patch("/videos/{video_id}/transcript")
 def update_transcript(video_id: str, data: dict):
   transcript = data.get("transcript")
 
@@ -266,7 +266,7 @@ def get_comment(comment_id: int):
 
   return row
 
-@app.post("/comments", response_model=CommentRead)
+@app.post("/comments")
 def create_comment(payload: Comment):
   sql = """
     INSERT INTO comments (
