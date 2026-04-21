@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
 import csv
+import hashlib
 import json
 import os
 import re
 import time
+from collections import defaultdict
 from dataclasses import dataclass
 from typing import List
 from urllib import error, request as urllib_request
@@ -19,22 +21,67 @@ OUT_CSV           = os.getenv("OUT_CSV", "/data/results.csv").strip()
 TRANSCRIPTS_FILE  = os.getenv("TRANSCRIPTS_FILE", "/data/transcripts.json").strip()
 CLAIMS_CSV        = os.getenv("CLAIMS_CSV", "/data/claims.csv").strip()
 CLAIM_STATUS_FILE = os.getenv("CLAIM_STATUS_FILE", "/data/claim_status.json").strip()
-NARRATIVES_CSV    = os.getenv("NARRATIVES_CSV", "/data/generated_narratives_and_claims_formatted.csv").strip()
+NARRATIVES_JSON   = os.getenv("NARRATIVES_JSON", "/data/narratives.json").strip()
 CLAIM_DAILY_LIMIT = int(os.getenv("CLAIM_DAILY_LIMIT", "50"))
 
 GEMINI_MODEL        = "gemini-2.5-flash"
 GEMINI_RETRIES      = 3
 GEMINI_RATE_MAX_WAIT = 300  # seconds — delays longer than this indicate daily quota exhaustion
-BATCH_SIZE          = 50
+CLUSTER_BATCH_SIZE  = int(os.getenv("CLUSTER_BATCH_SIZE", "10"))
+CLUSTER_STATE_FILE  = os.getenv("CLUSTER_STATE_FILE", "/data/cluster_state.json")
+# Cap claims per narrative prompt so Ollama on CPU doesn't exceed context or
+# OLLAMA_TIMEOUT. Clusters larger than this are split into multiple same-topic
+# sub-batches, each becoming its own narrative_group.
+NARRATIVE_BATCH_SIZE = int(os.getenv("NARRATIVE_BATCH_SIZE", "50"))
 OLLAMA_TIMEOUT      = 360
 OLLAMA_RETRIES      = 3
+
+# Closed vocabulary of canonical health topics. Every claim is labeled with
+# exactly one of these — no free-form labels, so no Pass 2 consolidation needed.
+HEALTH_TOPICS = [
+    "gut health and microbiome",
+    "sleep science and optimization",
+    "stress and cortisol",
+    "mental health and anxiety",
+    "bodybuilding and muscle growth",
+    "strength training science",
+    "cardiovascular health",
+    "longevity and aging",
+    "hormones and endocrine health",
+    "weight loss and metabolism",
+    "supplements and vitamins",
+    "recovery and injury prevention",
+    "nutrition and macronutrients",
+    "immune system",
+    "inflammation",
+    "blood sugar and insulin",
+    "cholesterol and heart disease",
+    "respiratory health",
+    "bone health and osteoporosis",
+    "skin health and dermatology",
+    "cognitive performance and brain health",
+    "intermittent fasting",
+    "protein and amino acids",
+    "hydration and electrolytes",
+    "posture and mobility",
+    "testosterone and men's health",
+    "women's hormonal health",
+    "Other",
+]
+_HEALTH_TOPICS_LOOKUP = {t.lower(): t for t in HEALTH_TOPICS}
+
+
+def _normalize_label(raw) -> str:
+    """Coerce any model output to one of the canonical HEALTH_TOPICS labels."""
+    if not isinstance(raw, str):
+        return "Other"
+    return _HEALTH_TOPICS_LOOKUP.get(raw.strip().lower(), "Other")
 
 
 class QuotaExhausted(Exception):
     """Raised when the Gemini daily free-tier quota is exhausted."""
 
 CLAIMS_FIELDS     = ["video_id", "url", "title", "channel", "claim_number", "claim", "narrative"]
-NARRATIVES_FIELDS = ["narrative_group", "narrative", "video_id", "claim_number", "claim"]
 
 # Sentinel values written by fetch_transcripts.py when a transcript is unavailable
 _NO_TRANSCRIPT_SENTINELS = {"No transcript available", "Video unavailable"}
@@ -316,13 +363,95 @@ def _request_narrative_ollama(batch: List[ClaimRecord]) -> str:
     return narrative
 
 
+def _request_cluster_labels_ollama(batch: List[ClaimRecord]) -> List[str]:
+    """Assign each claim to exactly one label from the closed HEALTH_TOPICS vocabulary."""
+    n = len(batch)
+    topic_list = "\n".join(f"- {t}" for t in HEALTH_TOPICS)
+    prompt_lines = [
+        f"Classify each of the {n} health claims below into exactly one topic from the fixed list.",
+        "Rules:",
+        "1) Every label MUST be copied verbatim from the topic list — no paraphrasing, no new labels.",
+        "2) If no topic fits, use \"Other\".",
+        f"3) Return ONLY valid JSON with exactly {n} labels: {{\"labels\": [\"label1\", ...]}}",
+        "",
+        "Topic list:",
+        topic_list,
+        "",
+        "Claims:",
+    ]
+    for i, rec in enumerate(batch, 1):
+        prompt_lines.append(f"{i}. {rec.claim}")
+
+    payload = {
+        "model": OLLAMA_MODEL,
+        "prompt": "\n".join(prompt_lines),
+        "stream": False,
+        "format": "json",
+        "options": {"temperature": 0.0},
+    }
+    data = json.dumps(payload).encode("utf-8")
+    req = urllib_request.Request(
+        url=OLLAMA_URL.rstrip("/") + "/api/generate",
+        data=data,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib_request.urlopen(req, timeout=OLLAMA_TIMEOUT) as resp:
+            body = json.loads(resp.read().decode("utf-8"))
+        parsed = json.loads(body.get("response") or "{}")
+        raw_labels = parsed.get("labels", [])
+    except Exception as e:
+        raise RuntimeError(f"Ollama cluster-label error: {e}") from e
+
+    # Coerce every label to the canonical vocabulary; anything off-list becomes "Other"
+    labels = [_normalize_label(l) for l in raw_labels]
+    if len(labels) < n:
+        labels += ["Other"] * (n - len(labels))
+    return labels[:n]
+
+
+def _compute_claims_hash(records: List[ClaimRecord]) -> str:
+    content = "|".join(
+        f"{r.video_id}:{r.claim}"
+        for r in sorted(records, key=lambda r: (r.video_id, r.claim))
+    )
+    return hashlib.md5(content.encode()).hexdigest()
+
+
+def _cluster_claims(records: List[ClaimRecord]) -> List[List[ClaimRecord]]:
+    """Single-pass semantic clustering with a closed vocabulary.
+
+    Each claim is labeled with exactly one of HEALTH_TOPICS (or "Other") in
+    batches. Claims are then grouped by label, yielding at most
+    len(HEALTH_TOPICS) clusters. No consolidation pass needed.
+    """
+    groups: dict = defaultdict(list)
+    batches = _chunks(records, CLUSTER_BATCH_SIZE)
+    for i, batch in enumerate(batches, 1):
+        print(f"  [cluster] Labeling batch {i}/{len(batches)} ({len(batch)} claims) …")
+        labels: List[str] = []
+        for attempt in range(1, OLLAMA_RETRIES + 1):
+            try:
+                labels = _request_cluster_labels_ollama(batch)
+                break
+            except RuntimeError as e:
+                if attempt < OLLAMA_RETRIES:
+                    print(f"    Attempt {attempt} failed: {e} — retrying in 1s …")
+                    time.sleep(1.0)
+                else:
+                    print(f"    [ERROR] Labeling failed for batch {i}: {e} — using 'Other'")
+                    labels = ["Other"] * len(batch)
+        for rec, label in zip(batch, labels):
+            groups[label].append(rec)
+
+    return list(groups.values())
+
+
 def narrative_step(all_claim_rows: List[dict]) -> None:
-    """Regenerate NARRATIVES_CSV from all accumulated claims using Ollama."""
+    """Recluster all claims and regenerate NARRATIVES_JSON when claims change."""
     records = [
-        ClaimRecord(
-            video_id=row["video_id"],
-            claim=row["claim"],
-        )
+        ClaimRecord(video_id=row["video_id"], claim=row["claim"])
         for row in all_claim_rows
         if (row.get("claim") or "").strip()
     ]
@@ -331,14 +460,36 @@ def narrative_step(all_claim_rows: List[dict]) -> None:
         print("[narrative] No claims found — skipping narrative generation")
         return
 
-    batches = _chunks(records, BATCH_SIZE)
-    print(f"[narrative] {len(records)} claims → {len(batches)} batch(es) of ≤{BATCH_SIZE}")
+    # Skip if claims haven't changed since last run
+    current_hash = _compute_claims_hash(records)
+    cluster_state = load_json(CLUSTER_STATE_FILE)
+    if cluster_state.get("claims_hash") == current_hash:
+        print("[narrative] Claims unchanged — skipping recluster")
+        return
 
-    output_rows = []
-    global_claim_counter = 1
+    print(f"[narrative] {len(records)} claims — clustering …")
+    clusters = _cluster_claims(records)
 
-    for gi, batch in enumerate(batches, 1):
-        print(f"  Generating narrative for batch {gi}/{len(batches)} ({len(batch)} claims) …")
+    # Split any cluster larger than NARRATIVE_BATCH_SIZE into same-topic sub-batches.
+    # Each sub-batch becomes its own narrative_group in the output.
+    narrative_batches: List[List[ClaimRecord]] = []
+    for cluster in clusters:
+        if len(cluster) <= NARRATIVE_BATCH_SIZE:
+            narrative_batches.append(cluster)
+        else:
+            narrative_batches.extend(_chunks(cluster, NARRATIVE_BATCH_SIZE))
+
+    print(
+        f"[narrative] {len(clusters)} semantic cluster(s) → "
+        f"{len(narrative_batches)} narrative group(s) "
+        f"(cap {NARRATIVE_BATCH_SIZE} claims/group)"
+    )
+
+    output = []
+    claim_counter = 1
+
+    for gi, batch in enumerate(narrative_batches, 1):
+        print(f"  Generating narrative for group {gi}/{len(narrative_batches)} ({len(batch)} claims) …")
         narrative = None
         last_err = None
 
@@ -353,39 +504,23 @@ def narrative_step(all_claim_rows: List[dict]) -> None:
                     time.sleep(1.0)
 
         if narrative is None:
-            print(f"  [ERROR] Narrative generation failed for batch {gi}: {last_err}")
+            print(f"  [ERROR] Narrative generation failed for group {gi}: {last_err}")
             narrative = "[NARRATIVE GENERATION FAILED]"
 
-        # Narrative header row
-        output_rows.append({
-            "narrative_group": gi,
-            "narrative": narrative,
-            "video_id": "",
-            "claim_number": "",
-            "claim": "",
-        })
-
-        # Claim rows — numbered globally across all batches
+        claims = []
         for rec in batch:
-            output_rows.append({
-                "narrative_group": "",
-                "narrative": "",
-                "video_id": rec.video_id,
-                "claim_number": global_claim_counter,
-                "claim": rec.claim,
-            })
-            global_claim_counter += 1
+            claims.append({"video_id": rec.video_id, "claim_number": claim_counter, "claim": rec.claim})
+            claim_counter += 1
 
+        output.append({"narrative_group": gi, "narrative": narrative, "claims": claims})
         print(f"    → {narrative[:80]}")
 
-    tmp = NARRATIVES_CSV + ".tmp"
-    with open(tmp, "w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=NARRATIVES_FIELDS)
-        w.writeheader()
-        w.writerows(output_rows)
-    os.replace(tmp, NARRATIVES_CSV)
+    save_json(NARRATIVES_JSON, output)
 
-    print(f"[narrative] Written {len(batches)} narrative group(s) → {NARRATIVES_CSV}")
+    cluster_state["claims_hash"] = current_hash
+    save_json(CLUSTER_STATE_FILE, cluster_state)
+
+    print(f"[narrative] Written {len(narrative_batches)} narrative group(s) → {NARRATIVES_JSON}")
 
 
 # ── main ───────────────────────────────────────────────────────────────────────
