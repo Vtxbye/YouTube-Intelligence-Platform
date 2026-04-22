@@ -18,6 +18,8 @@ while [ $attempt -le $((MAX_RETRIES + 1)) ]; do
         /usr/local/bin/python3 /app/fetch_comments.py >> /data/runner.log 2>&1
         echo "[runner] Extracting claims and narratives..." >> /data/runner.log 2>&1
         /usr/local/bin/python3 /app/extract_claims.py >> /data/runner.log 2>&1
+        echo "[runner] Analyzing sentiment..." >> /data/runner.log 2>&1
+        /usr/local/bin/python3 /app/analyze_sentiment.py >> /data/runner.log 2>&1
         exit 0
     fi
     if [ $attempt -le $MAX_RETRIES ]; then

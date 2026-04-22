@@ -15,6 +15,7 @@ COPY fetch_transcripts.py /app/fetch_transcripts.py
 COPY fetch_comments.py /app/fetch_comments.py
 COPY check_availability.py /app/check_availability.py
 COPY extract_claims.py /app/extract_claims.py
+COPY analyze_sentiment.py /app/analyze_sentiment.py
 COPY entrypoint.sh /app/entrypoint.sh
 COPY run_with_retry.sh /app/run_with_retry.sh
 
