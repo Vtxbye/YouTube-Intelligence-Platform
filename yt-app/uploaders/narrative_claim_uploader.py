@@ -1,4 +1,4 @@
-import csv
+import json
 import os
 import requests
 from pathlib import Path
@@ -17,24 +17,49 @@ def parallel_map(func, items, max_workers=2):
       except Exception as e:
         print(f"Error: {e}")
 
-def parse_csv(csv_path):
+def normalize(text):
+  return " ".join(text.strip().split())
+
+def parse_json(json_path):
+  with open(json_path, "r", encoding="utf-8") as f:
+    data = json.load(f)
+
   narratives = []
-  current = None
+  seen_narratives = set()
 
-  with open(csv_path, newline="", encoding="utf-8") as f:
-    reader = csv.DictReader(f)
-    for row in reader:
-      narrative_text = row.get("narrative", "").strip()
-      video_id = row.get("video_id", "").strip()
-      claim_text = row.get("claim", "").strip()
+  for block in data:
+    narrative_text = normalize(block.get("narrative", ""))
+    if not narrative_text:
+      continue
 
-      if narrative_text:
-        current = {"narrative_text": narrative_text, "claims": []}
-        narratives.append(current)
+    if narrative_text in seen_narratives:
+      continue
+    seen_narratives.add(narrative_text)
+
+    claims = block.get("claims", [])
+    seen_claims = set()
+    formatted_claims = []
+
+    for c in claims:
+      vid = c.get("video_id")
+      txt = normalize(c.get("claim", ""))
+      if not vid or not txt:
         continue
 
-      if current and video_id and claim_text:
-        current["claims"].append({"video_id": video_id, "claim_text": claim_text})
+      key = (vid, txt)
+      if key in seen_claims:
+        continue
+      seen_claims.add(key)
+
+      formatted_claims.append({
+        "video_id": vid,
+        "claim_text": txt
+      })
+
+    narratives.append({
+      "narrative_text": narrative_text,
+      "claims": formatted_claims
+    })
 
   return narratives
 
@@ -47,7 +72,7 @@ def process_single_claim(args):
   claim_id = None
 
   for vc in video_claims:
-    if vc["claim_text"].strip() == claim_text:
+    if vc["claim_text"] == claim_text:
       claim_id = vc["claim_id"]
       break
 
@@ -74,11 +99,12 @@ def process_single_claim(args):
 
 def upload_data(narratives):
   session = requests.Session()
+
   r = session.get(f"{API_URL}/videos/ids")
   existing_videos = {v["video_id"] for v in r.json()}
 
   r = session.get(f"{API_URL}/narratives", params={"limit": 5000})
-  narrative_cache = {n["narrative_text"].strip(): n["narrative_id"] for n in r.json()}
+  narrative_cache = {normalize(n["narrative_text"]): n["narrative_id"] for n in r.json()}
 
   video_claim_cache = {}
   narrative_claim_cache = {}
@@ -102,13 +128,14 @@ def upload_data(narratives):
       narrative_claim_cache[narrative_id] = r.json()
 
     for c in claims:
-      if c["video_id"] not in existing_videos:
-        print(f"Skip — video {c['video_id']} missing")
+      vid = c["video_id"]
+      if vid not in existing_videos:
+        print(f"Skip — video {vid} missing")
         continue
 
-      if c["video_id"] not in video_claim_cache:
-        r = session.get(f"{API_URL}/videos/{c['video_id']}/claims/ids")
-        video_claim_cache[c["video_id"]] = r.json()
+      if vid not in video_claim_cache:
+        r = session.get(f"{API_URL}/videos/{vid}/claims/ids")
+        video_claim_cache[vid] = r.json()
 
     items = [
       (session, narrative_id, c, video_claim_cache, narrative_claim_cache)
@@ -120,9 +147,9 @@ def upload_data(narratives):
 
 def main():
   script_dir = Path(__file__).resolve().parent
-  data_file = script_dir.parents[1] / "yt-health-agent" / "data" / "generated_narratives_and_claims_formatted.csv"
+  data_file = script_dir.parents[1] / "yt-health-agent" / "data" / "narratives.json"
 
-  narratives = parse_csv(data_file)
+  narratives = parse_json(data_file)
   upload_data(narratives)
 
 if __name__ == "__main__":
