@@ -9,10 +9,10 @@ type NarrativeClaimVideoRow = {
   video_title: string | null;
   video_published_at: string | null;
   channel_name: string | null;
-  claim: string | null;
-  claim_number: number | null;
   video_url?: string | null;
   views?: number | null;
+  claim_id: number | null;
+  claim_text: string | null;
 };
 
 type VideoWithClaims = {
@@ -24,7 +24,7 @@ type VideoWithClaims = {
   views?: number | null;
   claims: {
     claim: string;
-    claim_number: number | null;
+    claim_number: number;
   }[];
 };
 
@@ -38,10 +38,8 @@ export default function Page() {
   useEffect(() => {
     async function fetchVideoClaims() {
       try {
-        const res = await fetch('http://localhost:8000/narrative-claim-video');
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/videos-claims`);
         const data = await res.json();
-
-        console.log("Dashboard video claim data:", data);
         setRows(data);
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
@@ -78,29 +76,15 @@ export default function Page() {
 
       const video = videoMap.get(row.video_id)!;
 
-      if (
-        row.claim &&
-        !video.claims.some(
-          (existingClaim) =>
-            existingClaim.claim === row.claim &&
-            existingClaim.claim_number === row.claim_number
-        )
-      ) {
+      if (row.claim_text) {
         video.claims.push({
-          claim: row.claim,
-          claim_number: row.claim_number,
+          claim: row.claim_text,
+          claim_number: video.claims.length + 1,
         });
       }
     });
 
-    const groupedVideos = Array.from(videoMap.values()).map((video) => ({
-      ...video,
-      claims: [...video.claims].sort((a, b) => {
-        const aNum = a.claim_number ?? Number.MAX_SAFE_INTEGER;
-        const bNum = b.claim_number ?? Number.MAX_SAFE_INTEGER;
-        return aNum - bNum;
-      }),
-    }));
+    const groupedVideos = Array.from(videoMap.values());
 
     groupedVideos.sort((a, b) => {
       const aTime = a.video_published_at ? new Date(a.video_published_at).getTime() : 0;
@@ -108,14 +92,8 @@ export default function Page() {
       const aViews = a.views ?? 0;
       const bViews = b.views ?? 0;
 
-      if (sortBy === 'oldest') {
-        return aTime - bTime;
-      }
-
-      if (sortBy === 'most_popular') {
-        return bViews - aViews;
-      }
-
+      if (sortBy === 'oldest') return aTime - bTime;
+      if (sortBy === 'most_popular') return bViews - aViews;
       return bTime - aTime;
     });
 
@@ -239,13 +217,13 @@ export default function Page() {
 
                     <div className="space-y-3">
                       {video.claims.length > 0 ? (
-                        video.claims.map((claimItem, index) => (
+                        video.claims.map((claimItem) => (
                           <div
-                            key={`${video.video_id}-${claimItem.claim_number ?? index}`}
+                            key={`${video.video_id}-${claimItem.claim_number}`}
                             className="bg-gray-50 rounded-md p-3"
                           >
                             <p className="text-sm font-medium text-gray-700 mb-1">
-                              Claim {claimItem.claim_number ?? index + 1}
+                              Claim {claimItem.claim_number}
                             </p>
                             <p className="text-gray-800 text-sm">
                               {claimItem.claim}

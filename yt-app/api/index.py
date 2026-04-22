@@ -205,6 +205,25 @@ def get_video_claims(video_id: str):
 
     return execute(sql, (video_id,), fetch_all=True)
 
+@app.get("/videos-claims")
+def get_videos_claims():
+    sql = """
+        SELECT
+            v.video_id,
+            v.title AS video_title,
+            v.published_at AS video_published_at,
+            v.channel_name,
+            v.views,
+            v.video_url,
+            c.claim_id,
+            c.claim_text
+        FROM claims c
+        JOIN video_data v
+            ON c.video_id = v.video_id
+        ORDER BY v.published_at DESC
+    """
+    return execute(sql, fetch_all=True)
+
 @app.get("/claims/{claim_id}")
 def get_claim(claim_id: int):
 
@@ -407,3 +426,17 @@ def get_narrative_claim_video(narrative_id: int):
     WHERE narrative_id = %s
   """
   return execute(sql, (narrative_id,), fetch_all=True)
+
+@app.get("/narratives-trends")
+def get_narrative_trends():
+    sql = """
+        SELECT
+            narrative_id,
+            narrative_text,
+            claim_date,
+            claims_on_date,
+            claims_7d_avg
+        FROM narrative_trends_view
+        ORDER BY narrative_id, claim_date;
+    """
+    return execute(sql, fetch_all=True)

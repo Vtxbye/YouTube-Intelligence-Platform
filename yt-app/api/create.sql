@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS video_data (
   matched_keywords TEXT,
   transcript TEXT,
   sentiment_label TEXT,
+  sentiment_score double precision DEFAULT 0,
   CHECK (duration_seconds > 0 OR duration_seconds IS NULL),
   CHECK (views >= 0 OR views IS NULL)
 );

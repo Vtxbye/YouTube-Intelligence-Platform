@@ -20,148 +20,113 @@ type Narrative = {
   claim_count: number;
 };
 
-type NarrativeClaimVideo = {
+type NarrativeTrendRow = {
   narrative_id: number;
-  video_id: string;
-  video_published_at: string;
+  narrative_text: string;
+  claim_date: string;
+  claims_on_date: number;
+  claims_7d_avg: number;
 };
 
-type NarrativeWithVideoCount = Narrative & {
-  video_count: number;
+type NarrativeWithMeta = Narrative & {
   color: string;
   chart_label: string;
 };
 
 const narrativeColors = [
-  '#3b82f6',
-  '#10b981',
-  '#f97316',
-  '#ef4444',
-  '#6366f1',
-  '#ec4899',
-  '#eab308',
-  '#14b8a6',
-  '#8b5cf6',
-  '#06b6d4',
-  '#84cc16',
-  '#f43f5e',
+  '#3b82f6', '#10b981', '#f97316', '#ef4444',
+  '#6366f1', '#ec4899', '#eab308', '#14b8a6',
+  '#8b5cf6', '#06b6d4', '#84cc16', '#f43f5e',
 ];
 
 export default function Page() {
-  const [narratives, setNarratives] = useState<NarrativeWithVideoCount[]>([]);
-  const [narrativeClaimVideoData, setNarrativeClaimVideoData] = useState<NarrativeClaimVideo[]>([]);
+  const [narratives, setNarratives] = useState<NarrativeWithMeta[]>([]);
+  const [trends, setTrends] = useState<NarrativeTrendRow[]>([]);
   const [selectedNarratives, setSelectedNarratives] = useState<string[]>([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   useEffect(() => {
-    async function fetchNarratives() {
+    async function fetchData() {
       try {
-        const [narrativesRes, narrativeClaimVideoRes] = await Promise.all([
-          fetch('http://localhost:8000/narratives'),
-          fetch('http://localhost:8000/narrative-claim-video'),
+        const [narrativesRes, trendsRes] = await Promise.all([
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/narratives`),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/narratives-trends`)
         ]);
 
         const narrativesData: Narrative[] = await narrativesRes.json();
-        const claimVideoData: NarrativeClaimVideo[] = await narrativeClaimVideoRes.json();
+        const trendsData: NarrativeTrendRow[] = await trendsRes.json();
 
-        const videoCountMap = new Map<number, Set<string>>();
-
-        claimVideoData.forEach((row) => {
-          if (!videoCountMap.has(row.narrative_id)) {
-            videoCountMap.set(row.narrative_id, new Set());
-          }
-          videoCountMap.get(row.narrative_id)!.add(row.video_id);
-        });
-
-        const filteredNarratives = narrativesData
-          .filter((narrative) => narrative.claim_count > 0)
-          .map((narrative, index) => ({
-            ...narrative,
-            video_count: videoCountMap.get(narrative.narrative_id)?.size || 0,
+        const filtered = narrativesData
+          .filter(n => n.claim_count > 0)
+          .map((n, index) => ({
+            ...n,
             color: narrativeColors[index % narrativeColors.length],
-            chart_label: `N${index + 1}`,
+            chart_label: `N${index + 1}`
           }));
 
-        setNarratives(filteredNarratives);
-        setNarrativeClaimVideoData(claimVideoData);
-        setSelectedNarratives(
-          filteredNarratives.slice(0, 5).map((narrative) => narrative.chart_label)
-        );
+        setNarratives(filtered);
+        setTrends(trendsData);
+
+        setSelectedNarratives(filtered.slice(0, 5).map(n => n.chart_label));
       } catch (err) {
-        console.error("Error fetching narratives:", err);
+        console.error("Error fetching narrative data:", err);
       }
     }
 
-    fetchNarratives();
+    fetchData();
   }, []);
 
-  const toggleNarrative = (chartLabel: string) => {
-    setSelectedNarratives((prev) =>
-      prev.includes(chartLabel)
-        ? prev.filter((item) => item !== chartLabel)
-        : [...prev, chartLabel]
+  const toggleNarrative = (label: string) => {
+    setSelectedNarratives(prev =>
+      prev.includes(label)
+        ? prev.filter(x => x !== label)
+        : [...prev, label]
     );
   };
 
   const graphData = useMemo(() => {
-    const narrativeMap = new Map(
-      narratives.map((narrative) => [narrative.narrative_id, narrative.chart_label])
+    const idToLabel = new Map(
+      narratives.map(n => [n.narrative_id, n.chart_label])
     );
 
-    const monthNarrativeVideoMap = new Map<string, Map<string, Set<string>>>();
+    const monthMap = new Map<string, Record<string, number>>();
 
-    narrativeClaimVideoData.forEach((row) => {
-      const chartLabel = narrativeMap.get(row.narrative_id);
-      if (!chartLabel) return;
+    trends.forEach(row => {
+      const label = idToLabel.get(row.narrative_id);
+      if (!label) return;
 
-      const date = new Date(row.video_published_at);
+      const date = new Date(row.claim_date);
       if (isNaN(date.getTime())) return;
 
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const monthKey = `${year}-${month}`;
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 
-      if (!monthNarrativeVideoMap.has(monthKey)) {
-        monthNarrativeVideoMap.set(monthKey, new Map());
+      if (!monthMap.has(key)) {
+        monthMap.set(key, { month: parseInt(key) });
       }
 
-      const narrativeCounts = monthNarrativeVideoMap.get(monthKey)!;
-
-      if (!narrativeCounts.has(chartLabel)) {
-        narrativeCounts.set(chartLabel, new Set());
-      }
-
-      narrativeCounts.get(chartLabel)!.add(row.video_id);
+      const bucket = monthMap.get(key)!;
+      bucket[label] = (bucket[label] || 0) + row.claims_on_date;
     });
 
-    const sortedMonths = Array.from(monthNarrativeVideoMap.keys()).sort();
+    const sortedKeys = Array.from(monthMap.keys()).sort();
 
-    return sortedMonths.map((monthKey) => {
-      const [year, month] = monthKey.split('-');
+    return sortedKeys.map(key => {
+      const [year, month] = key.split('-');
       const date = new Date(Number(year), Number(month) - 1);
-      const formattedMonth = date.toLocaleString('en-US', {
-        month: 'short',
-        year: 'numeric',
-      });
 
-      const row: Record<string, string | number> = { month: formattedMonth };
-      const narrativeCounts = monthNarrativeVideoMap.get(monthKey)!;
-
-      narratives.forEach((narrative) => {
-        row[narrative.chart_label] =
-          narrativeCounts.get(narrative.chart_label)?.size || 0;
-      });
-
-      return row;
+      return {
+        ...monthMap.get(key)!,
+        month: date.toLocaleString('en-US', { month: 'short', year: 'numeric' })
+      };
     });
-  }, [narratives, narrativeClaimVideoData]);
+  }, [narratives, trends]);
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl text-black font-semibold">Narratives</h1>
         <p className="text-black mt-1">
-          Narrative clusters and the videos connected to them.
+          Narrative clusters and their activity over time.
         </p>
       </div>
 
@@ -170,36 +135,30 @@ export default function Page() {
           <div className="flex items-center gap-3 mb-6">
             <TrendingUp className="text-purple-600" />
             <div>
-              <h2 className="font-semibold text-lg text-black">
-                Trending Narratives
-              </h2>
-              <p className="text-black text-sm">
-                Patterns of claims across videos
-              </p>
+              <h2 className="font-semibold text-lg text-black">Trending Narratives</h2>
+              <p className="text-black text-sm">Narratives with active claims</p>
             </div>
           </div>
 
           <ul className="space-y-3">
-            {narratives.map((narrative) => (
-              <li key={narrative.narrative_id}>
+            {narratives.map(n => (
+              <li key={n.narrative_id}>
                 <Link
-                  href={`/narratives/${narrative.narrative_id}`}
+                  href={`/narratives/${n.narrative_id}`}
                   className="block p-3 rounded-lg hover:bg-gray-50"
                 >
                   <div className="flex items-start gap-3">
                     <div
                       className="w-2 h-2 rounded-full mt-2 shrink-0"
-                      style={{ backgroundColor: narrative.color }}
+                      style={{ backgroundColor: n.color }}
                     />
 
                     <div>
                       <span className="text-gray-800 font-medium">
-                        {narrative.narrative_text}
+                        {n.narrative_text}
                       </span>
-
                       <p className="text-sm text-gray-500 mt-1">
-                        {narrative.video_count}{" "}
-                        {narrative.video_count === 1 ? "video" : "videos"}
+                        {n.claim_count} {n.claim_count === 1 ? "claim" : "claims"}
                       </p>
                     </div>
                   </div>
@@ -223,25 +182,25 @@ export default function Page() {
 
               {dropdownOpen && (
                 <div className="absolute right-0 mt-2 bg-white border rounded shadow p-3 space-y-2 z-50 max-h-72 overflow-y-auto min-w-72">
-                  {narratives.map((narrative) => (
+                  {narratives.map(n => (
                     <label
-                      key={narrative.narrative_id}
+                      key={n.narrative_id}
                       className="flex items-center gap-2 text-sm text-gray-900 font-medium hover:bg-gray-100 px-2 py-1 rounded cursor-pointer"
                     >
                       <input
                         type="checkbox"
-                        checked={selectedNarratives.includes(narrative.chart_label)}
-                        onChange={() => toggleNarrative(narrative.chart_label)}
+                        checked={selectedNarratives.includes(n.chart_label)}
+                        onChange={() => toggleNarrative(n.chart_label)}
                       />
 
                       <span
                         className="w-2 h-2 rounded-full inline-block"
-                        style={{ backgroundColor: narrative.color }}
+                        style={{ backgroundColor: n.color }}
                       />
 
-                      <span className="font-semibold">{narrative.chart_label}</span>
+                      <span className="font-semibold">{n.chart_label}</span>
                       <span className="text-gray-500 ml-1 line-clamp-1">
-                        — {narrative.narrative_text}
+                        — {n.narrative_text}
                       </span>
                     </label>
                   ))}
@@ -259,15 +218,13 @@ export default function Page() {
               <Legend />
 
               {narratives
-                .filter((narrative) =>
-                  selectedNarratives.includes(narrative.chart_label)
-                )
-                .map((narrative) => (
+                .filter(n => selectedNarratives.includes(n.chart_label))
+                .map(n => (
                   <Line
-                    key={narrative.narrative_id}
+                    key={n.narrative_id}
                     type="monotone"
-                    dataKey={narrative.chart_label}
-                    stroke={narrative.color}
+                    dataKey={n.chart_label}
+                    stroke={n.color}
                     strokeWidth={2}
                   />
                 ))}
