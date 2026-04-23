@@ -517,3 +517,65 @@ def update_comment_sentiment(comment_id: int, data: dict):
   if row:
     return {"status": "updated"}
   return {"status": "skipped"}
+
+@app.get("/videos/sentiment")
+def get_videos_sentiment(limit: int = 20, offset: int = 0):
+    sql = """
+      SELECT
+        video_id,
+        title,
+        channel_name,
+        published_at,
+        video_url,
+        sentiment_label,
+        sentiment_score
+      FROM video_data
+      WHERE sentiment_label IS NOT NULL
+      ORDER BY published_at DESC
+      LIMIT %s OFFSET %s;
+    """
+
+    videos = execute(sql, (limit, offset), fetch_all=True)
+    return videos
+
+@app.get("/videos/{video_id}/sentiment")
+def get_video_detail(video_id: str, comment_limit: int = 50):
+    sql_video = """
+      SELECT
+        video_id,
+        title,
+        channel_name,
+        published_at,
+        video_url,
+        transcript,
+        sentiment_label,
+        sentiment_score,
+        sentiment_summary,
+        sentiment_highlight_tokens
+      FROM video_data
+      WHERE video_id = %s
+        AND sentiment_label IS NOT NULL;
+    """
+
+    video = execute(sql_video, (video_id,), fetch_one=True)
+
+    if not video:
+        return {"error": "No sentiment data for this video"}
+
+    sql_comments = """
+      SELECT
+        comment_id,
+        author,
+        comment_text,
+        sentiment_label,
+        sentiment_score,
+        sentiment_highlight_tokens
+      FROM comments
+      WHERE video_id = %s
+        AND sentiment_label IS NOT NULL
+      ORDER BY published_at DESC
+      LIMIT %s;
+    """
+
+    video["comments"] = execute(sql_comments, (video_id, comment_limit), fetch_all=True)
+    return video
