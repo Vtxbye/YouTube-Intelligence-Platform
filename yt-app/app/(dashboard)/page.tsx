@@ -1,298 +1,336 @@
 'use client';
 
-import { useState } from "react";
-import { TrendingUp } from 'lucide-react';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend
-} from 'recharts';
-import Link from 'next/link';
-import { redirect } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { Clock3 } from 'lucide-react';
+import { YouTubeEmbed } from '@next/third-parties/google';
 
-const trendingTopics = [
-  {
-    name: 'Exercise Routine',
-    color: '#3b82f6',
-    description: 'Structured physical activity to improve fitness and overall health.',
-    slug: 'exercise-routine'
-  },
-  {
-    name: 'Mental Health',
-    color: '#10b981',
-    description: 'Emotional wellbeing, mood regulation, and cognitive function.',
-    slug: 'mental-health'
-  },
-  {
-    name: 'Stress Management',
-    color: '#f97316',
-    description: 'Techniques for reducing physical and psychological stress.',
-    slug: 'stress-management'
-  },
-  {
-    name: 'Sleep Hygiene',
-    color: '#ef4444',
-    description: 'Habits that improve sleep quality and recovery.',
-    slug: 'sleep-hygiene'
-  },
-  {
-    name: 'Healthy Diet',
-    color: '#6366f1',
-    description: 'Balanced eating patterns that support overall health.',
-    slug: 'healthy-diet'
-  },
-  {
-    name: 'Nutrition Tips',
-    color: '#ec4899',
-    description: 'Nutrients and dietary strategies that support body function.',
-    slug: 'nutrition-tips'
-  },
-  {
-    name: 'Weight Loss Tips',
-    color: '#eab308',
-    description: 'Strategies for reducing body fat and improving metabolism.',
-    slug: 'weight-loss-tips'
-  },
-  {
-    name: 'Gut Health',
-    color: '#14b8a6',
-    description: 'Digestive health and microbiome balance.',
-    slug: 'gut-health'
-  },
-  {
-    name: 'Immune System',
-    color: '#8b5cf6',
-    description: 'Supporting the body’s ability to fight illness.',
-    slug: 'immune-system'
-  },
-  {
-    name: 'Wellness Habits',
-    color: '#06b6d4',
-    description: 'Daily behaviors that support long-term health.',
-    slug: 'wellness-habits'
-  },
-];
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || 'https://youtube-intelligence-platform-api.onrender.com';
 
-const revenueData = [
-  {
-    month: 'Jan',
-    'Exercise Routine': 4200,
-    'Mental Health': 3000,
-    'Stress Management': 2600,
-    'Sleep Hygiene': 2000,
-    'Healthy Diet': 3400,
-    'Nutrition Tips': 2800,
-    'Weight Loss Tips': 3600,
-    'Gut Health': 2500,
-    'Immune System': 3000,
-    'Wellness Habits': 2700,
-  },
-  {
-    month: 'Feb',
-    'Exercise Routine': 5000,
-    'Mental Health': 3200,
-    'Stress Management': 2700,
-    'Sleep Hygiene': 2100,
-    'Healthy Diet': 3600,
-    'Nutrition Tips': 3000,
-    'Weight Loss Tips': 3900,
-    'Gut Health': 2600,
-    'Immune System': 3200,
-    'Wellness Habits': 2800,
-  },
-  {
-    month: 'Mar',
-    'Exercise Routine': 4800,
-    'Mental Health': 3100,
-    'Stress Management': 2650,
-    'Sleep Hygiene': 2050,
-    'Healthy Diet': 3550,
-    'Nutrition Tips': 2950,
-    'Weight Loss Tips': 3800,
-    'Gut Health': 2550,
-    'Immune System': 3150,
-    'Wellness Habits': 2750,
-  },
-  {
-    month: 'Apr',
-    'Exercise Routine': 6200,
-    'Mental Health': 3500,
-    'Stress Management': 2900,
-    'Sleep Hygiene': 2300,
-    'Healthy Diet': 4000,
-    'Nutrition Tips': 3300,
-    'Weight Loss Tips': 4300,
-    'Gut Health': 2900,
-    'Immune System': 3500,
-    'Wellness Habits': 3100,
-  },
-  {
-    month: 'May',
-    'Exercise Routine': 7000,
-    'Mental Health': 3700,
-    'Stress Management': 3000,
-    'Sleep Hygiene': 2500,
-    'Healthy Diet': 4300,
-    'Nutrition Tips': 3600,
-    'Weight Loss Tips': 4700,
-    'Gut Health': 3100,
-    'Immune System': 3800,
-    'Wellness Habits': 3400,
-  },
-];
+type VideoRow = {
+  video_id: string;
+  title: string | null;
+  published_at: string | null;
+  channel_name: string | null;
+  video_url?: string | null;
+  views?: number | null;
+  duration_seconds?: number | null;
+  matched_keywords?: string | null;
+  transcript?: string | null;
+};
+
+type ClaimRow = {
+  claim_id: number;
+  video_id: string;
+  claim_text: string;
+  created_at: string;
+};
+
+type VideoWithClaims = VideoRow & {
+  claims: ClaimRow[];
+};
+
+type SortOption = 'newest' | 'oldest' | 'most_popular';
+
+const PAGE_SIZE = 20;
 
 export default function Page() {
-   const isLoggedIn = true;
+  const [rows, setRows] = useState<VideoWithClaims[]>([]);
+  const [sortBy, setSortBy] = useState<SortOption>('newest');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(false);
 
-  if (!isLoggedIn) {
-    redirect('/signin');
+  useEffect(() => {
+    async function fetchVideosAndClaims() {
+      try {
+        setLoading(true);
+
+        const offset = (page - 1) * PAGE_SIZE;
+
+        const videosRes = await fetch(
+          `${API_URL}/videos?limit=${PAGE_SIZE}&offset=${offset}`
+        );
+
+        if (!videosRes.ok) {
+          throw new Error('Failed to fetch videos');
+        }
+
+        const videosData: VideoRow[] = await videosRes.json();
+        setHasMore(videosData.length === PAGE_SIZE);
+
+        const videosWithClaims = await Promise.all(
+          videosData.map(async (video) => {
+            try {
+              const claimsRes = await fetch(`${API_URL}/videos/${video.video_id}/claims`);
+
+              if (!claimsRes.ok) {
+                throw new Error(`Failed to fetch claims for video ${video.video_id}`);
+              }
+
+              const claimsData: ClaimRow[] = await claimsRes.json();
+
+              return {
+                ...video,
+                claims: claimsData,
+              };
+            } catch (err) {
+              console.error(err);
+
+              return {
+                ...video,
+                claims: [],
+              };
+            }
+          })
+        );
+
+        setRows(videosWithClaims);
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchVideosAndClaims();
+  }, [page]);
+
+  function formatDate(dateString: string | null) {
+    if (!dateString) return 'Unknown date';
+
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Unknown date';
+
+    return date.toLocaleDateString();
   }
 
+  const videos = useMemo(() => {
+    const sortedVideos = [...rows];
 
-  const [selectedTopics, setSelectedTopics] = useState([
-    "Exercise Routine",
-    "Mental Health"
-  ]);
+    sortedVideos.sort((a, b) => {
+      const aTime = a.published_at ? new Date(a.published_at).getTime() : 0;
+      const bTime = b.published_at ? new Date(b.published_at).getTime() : 0;
+      const aViews = a.views ?? 0;
+      const bViews = b.views ?? 0;
 
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+      if (sortBy === 'oldest') {
+        return aTime - bTime;
+      }
 
-  const toggleTopic = (topic: string) => {
-    setSelectedTopics(prev =>
-      prev.includes(topic)
-        ? prev.filter(t => t !== topic)
-        : [...prev, topic]
-    );
-  };
+      if (sortBy === 'most_popular') {
+        return bViews - aViews;
+      }
+
+      return bTime - aTime;
+    });
+
+    return sortedVideos;
+  }, [rows, sortBy]);
+
+  const sortLabel =
+    sortBy === 'oldest'
+      ? 'Oldest'
+      : sortBy === 'most_popular'
+      ? 'Most Popular'
+      : 'Newest';
+
+  const visiblePages = (() => {
+    const pages: (number | string)[] = [];
+
+    if (page <= 3) {
+      pages.push(1, 2, 3, 4, 5);
+      if (hasMore) pages.push("...");
+    } else {
+      pages.push(1, "...");
+      pages.push(page - 1, page, page + 1);
+      if (hasMore) {
+        pages.push("...");
+      }
+    }
+
+    return [...new Set(pages)].filter((p) => typeof p !== "number" || p > 0);
+  })();
 
   return (
     <div className="space-y-6">
-
-      <div>
-        <h1 className="text-2xl text-black font-semibold">Dashboard Overview</h1>
-        <p className="text-black mt-1">Welcome back! Here&apos;s what&apos;s happening today.</p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-6">
-
-        {/* Trending Topics */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-
-          <div className="flex items-center gap-3 mb-6">
-            <TrendingUp className="text-purple-600"/>
-            <div>
-              <h2 className="font-semibold text-lg text-black">Trending Topics</h2>
-              <p className="text-black text-sm">Controversial & experimental health topics</p>
-            </div>
-          </div>
-
-          <ul className="space-y-3">
-            {trendingTopics.map(topic => (
-              <li key={topic.name}>
-                <Link
-                  href={`/topic/${topic.slug}`}
-                  className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50"
-                >
-
-                  <div
-                    className="w-2 h-2 rounded-full mt-2"
-                    style={{ backgroundColor: topic.color }}
-                  />
-
-                  <div>
-                    <span className="text-gray-700 font-medium">{topic.name}</span>
-                    <p className="text-gray-500 text-sm">{topic.description}</p>
-                  </div>
-
-                </Link>
-              </li>
-            ))}
-          </ul>
-
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl text-black font-semibold">Dashboard Overview</h1>
+          <p className="text-black mt-1">
+            Browse videos and the claims connected to each one.
+          </p>
         </div>
 
-        {/* Chart */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="relative">
+          <button
+            onClick={() => setDropdownOpen(!dropdownOpen)}
+            className="bg-gray-700 text-white px-4 py-2 rounded text-sm"
+          >
+            Sort: {sortLabel}
+          </button>
 
-          <div className="flex justify-between mb-4">
-
-            <h3 className="font-semibold text-black">Topics over time</h3>
-
-            <div className="relative">
-
+          {dropdownOpen && (
+            <div className="absolute right-0 mt-2 bg-white border rounded shadow p-2 z-50 min-w-44">
               <button
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="bg-gray-700 px-3 py-1 rounded text-sm"
+                onClick={() => {
+                  setSortBy('newest');
+                  setDropdownOpen(false);
+                }}
+                className="block w-full text-left px-3 py-2 text-sm text-gray-900 hover:bg-gray-100 rounded"
               >
-                Select Topics
+                Newest
               </button>
 
-              {dropdownOpen && (
-                <div className="absolute right-0 mt-2 bg-white border rounded shadow p-3 space-y-2 z-50">
+              <button
+                onClick={() => {
+                  setSortBy('oldest');
+                  setDropdownOpen(false);
+                }}
+                className="block w-full text-left px-3 py-2 text-sm text-gray-900 hover:bg-gray-100 rounded"
+              >
+                Oldest
+              </button>
 
-                  {trendingTopics.map(topic => (
-
-                    <label key={topic.name} className="flex items-center gap-2 text-sm text-gray-900 font-medium hover:bg-gray-100 px-2 py-1 rounded cursor-pointer">
-
-                      <input
-                        type="checkbox"
-                        checked={selectedTopics.includes(topic.name)}
-                        onChange={() => toggleTopic(topic.name)}
-                      />
-
-                      {topic.name}
-
-                    </label>
-
-                  ))}
-
-                </div>
-              )}
-
+              <button
+                onClick={() => {
+                  setSortBy('most_popular');
+                  setDropdownOpen(false);
+                }}
+                className="block w-full text-left px-3 py-2 text-sm text-gray-900 hover:bg-gray-100 rounded"
+              >
+                Most Popular
+              </button>
             </div>
-
-          </div>
-
-          <ResponsiveContainer width="100%" height={300}>
-
-            <LineChart data={revenueData}>
-
-              <CartesianGrid strokeDasharray="3 3"/>
-
-              <XAxis dataKey="month"/>
-
-              <YAxis/>
-
-              <Tooltip/>
-
-              <Legend/>
-
-              {trendingTopics
-                .filter(topic => selectedTopics.includes(topic.name))
-                .map(topic => (
-
-                  <Line
-                    key={topic.name}
-                    type="monotone"
-                    dataKey={topic.name}
-                    stroke={topic.color}
-                    strokeWidth={2}
-                  />
-
-                ))}
-
-            </LineChart>
-
-          </ResponsiveContainer>
-
+          )}
         </div>
-
       </div>
 
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <Clock3 className="text-purple-600" />
+          <div>
+            <h2 className="font-semibold text-lg text-black">Videos</h2>
+            <p className="text-black text-sm">
+              Videos and their related claims
+            </p>
+          </div>
+        </div>
+
+        {loading ? (
+          <p className="text-gray-600">Loading videos...</p>
+        ) : (
+          <div className="space-y-8">
+            {videos.map((video) => {
+              const embedVideoId =
+                video.video_url?.split('v=')[1]?.split('&')[0] || video.video_id;
+
+              return (
+                <div
+                  key={video.video_id}
+                  className="border border-gray-200 rounded-lg p-5"
+                >
+                  <div className="grid lg:grid-cols-[380px_1fr] gap-6">
+                    <div>
+                      {embedVideoId ? (
+                        <div className="rounded-lg overflow-hidden">
+                          <YouTubeEmbed
+                            videoid={embedVideoId}
+                            height={220}
+                            width={370}
+                          />
+                        </div>
+                      ) : (
+                        <div className="h-[220px] flex items-center justify-center bg-gray-100 rounded">
+                          <span className="text-sm text-gray-500">Video unavailable</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <h3 className="text-gray-900 font-semibold text-lg">
+                        {video.title || 'Untitled Video'}
+                      </h3>
+
+                      <p className="text-sm text-gray-600 mt-1">
+                        {video.channel_name || 'Unknown channel'}
+                      </p>
+
+                      <p className="text-sm text-gray-500 mt-1 mb-4">
+                        {formatDate(video.published_at)}
+                        {video.views !== null && video.views !== undefined
+                          ? ` • ${video.views.toLocaleString()} views`
+                          : ''}
+                      </p>
+
+                      <div className="space-y-3">
+                        {video.claims.length > 0 ? (
+                          video.claims.map((claimItem, index) => (
+                            <div
+                              key={claimItem.claim_id ?? `${video.video_id}-${index}`}
+                              className="bg-gray-50 rounded-md p-3"
+                            >
+                              <p className="text-sm font-medium text-gray-700 mb-1">
+                                Claim {index + 1}
+                              </p>
+                              <p className="text-gray-800 text-sm">
+                                {claimItem.claim_text}
+                              </p>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-sm text-gray-500">
+                            No claims on this video
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="flex items-center justify-center gap-2 mt-8 flex-wrap">
+          <button
+            onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+            disabled={page === 1}
+            className="px-4 py-2 rounded bg-gray-200 text-gray-800 disabled:opacity-50"
+          >
+            Previous
+          </button>
+
+          {visiblePages.map((item, index) =>
+            item === "..." ? (
+              <span key={`ellipsis-${index}`} className="px-2 text-gray-500">
+                ...
+              </span>
+            ) : (
+              <button
+                key={item}
+                onClick={() => setPage(item as number)}
+                className={`px-3 py-2 rounded text-sm ${
+                  page === item
+                    ? "bg-gray-700 text-white"
+                    : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                }`}
+              >
+                {item}
+              </button>
+            )
+          )}
+
+          <button
+            onClick={() => setPage((prev) => prev + 1)}
+            disabled={!hasMore}
+            className="px-4 py-2 rounded bg-gray-700 text-white disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
