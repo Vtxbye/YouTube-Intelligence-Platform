@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createUserWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/app/lib/firebase";
+import { auth } from "@/app/auth/firebase";
 
 import {
   CardTitle,
