@@ -19,7 +19,8 @@ export default function DashboardLayout({
   const [search, setSearch] = useState('');
 
   const navigation = [
-    { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+    { name: 'Home', href: '/home', icon: LayoutDashboard},
+    { name: 'Claims', href: '/', icon: LayoutDashboard },
     { name: 'Narratives', href: '/narratives', icon: FileText },
     { name: 'Sentiments', href: '/sentiment', icon: Gauge },
     { name: 'Settings', href: '/settings', icon: Settings },
