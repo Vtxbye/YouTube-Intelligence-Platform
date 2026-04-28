@@ -7,7 +7,7 @@ on:
 
 jobs:
   run_uploaders:
-    if: github.repository != 'KBui4/YouTube-Intelligence-Platform'
+    if: github.repository == 'KBui4/YouTube-Intelligence-Platform'
     runs-on: ubuntu-latest
     name: Executes all of the uploaders
 
