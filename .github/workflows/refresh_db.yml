@@ -7,7 +7,7 @@ on:
 
 jobs:
   refresh:
-    if: github.repository = 'KBui4/YouTube-Intelligence-Platform'
+    if: github.repository == 'KBui4/YouTube-Intelligence-Platform'
     runs-on: ubuntu-latest
 
     steps:
@@ -19,3 +19,4 @@ jobs:
           DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
         run: |
           psql "$DATABASE_URL" -c "REFRESH MATERIALIZED VIEW CONCURRENTLY narrative_claim_video_view;"
+          psql "$DATABASE_URL" -c "REFRESH MATERIALIZED VIEW CONCURRENTLY narrative_trends_view;"
