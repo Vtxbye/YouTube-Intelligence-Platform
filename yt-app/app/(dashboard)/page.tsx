@@ -1,118 +1,135 @@
 'use client';
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/app/auth/firebase";
 import { Clock3 } from 'lucide-react';
 import { YouTubeEmbed } from '@next/third-parties/google';
+import { useSearch } from '@/app/context/SearchContext';
 
-type NarrativeClaimVideoRow = {
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+type VideoRow = {
   video_id: string;
-  video_title: string | null;
-  video_published_at: string | null;
+  title: string | null;
+  published_at: string | null;
   channel_name: string | null;
   video_url?: string | null;
   views?: number | null;
-  claim_id: number | null;
-  claim_text: string | null;
+  duration_seconds?: number | null;
+  matched_keywords?: string | null;
+  transcript?: string | null;
 };
 
-type VideoWithClaims = {
+type ClaimRow = {
+  claim_id: number;
   video_id: string;
-  video_title: string | null;
-  video_published_at: string | null;
-  channel_name: string | null;
-  video_url?: string | null;
-  views?: number | null;
-  claims: {
-    claim: string;
-    claim_number: number;
-  }[];
+  claim_text: string;
+  created_at: string;
+};
+
+type VideoWithClaims = VideoRow & {
+  claims: ClaimRow[];
 };
 
 type SortOption = 'newest' | 'oldest' | 'most_popular';
 
+const PAGE_SIZE = 20;
+
 export default function Page() {
-  const router = useRouter();
-  const [authChecked, setAuthChecked] = useState(false);
-  const [rows, setRows] = useState<NarrativeClaimVideoRow[]>([]);
+  const [rows, setRows] = useState<VideoWithClaims[]>([]);
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(false);
+  const [expandedVideos, setExpandedVideos] = useState<Record<string, boolean>>({});
+  const search = useSearch();
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        router.replace("/signup");
-      } else {
-        setAuthChecked(true);
+  async function fetchVideosAndClaims() {
+    try {
+      setLoading(true);
+
+      const offset = (page - 1) * PAGE_SIZE;
+
+      
+      const videosRes = await fetch(
+        `${API_URL}/videos/with-claims?sort=${sortBy}&limit=${PAGE_SIZE}&offset=${offset}`
+      );
+
+      if (!videosRes.ok) {
+        throw new Error("Failed to fetch videos");
       }
-    });
-    return () => unsub();
-  }, [router]);
+
+      const videosData = await videosRes.json();
+
+      setHasMore(videosData.length === PAGE_SIZE);
+
+      const videosWithClaims = await Promise.all(
+        videosData.map(async (video: any) => {
+          try {
+            const claimsRes = await fetch(
+              `${API_URL}/videos/${video.video_id}/claims`
+            );
+
+            if (!claimsRes.ok) throw new Error();
+
+            const claimsData = await claimsRes.json();
+
+            return {
+              ...video,
+              claims: claimsData, 
+            };
+          } catch (err) {
+            return {
+              ...video,
+              claims: [],
+            };
+          }
+        })
+      );
+
+      
+      setRows(videosWithClaims);
+
+    } catch (err) {
+      console.error("Error fetching dashboard data:", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  fetchVideosAndClaims();
+}, [page, sortBy]);
 
   useEffect(() => {
-    if (!authChecked) return;
-    async function fetchVideoClaims() {
-      try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/videos-claims`);
-        const data = await res.json();
-        setRows(data);
-      } catch (err) {}
-    }
-    fetchVideoClaims();
-  }, [authChecked]);
+    setPage(1);
+  }, [sortBy]);
 
   function formatDate(dateString: string | null) {
     if (!dateString) return 'Unknown date';
+
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return 'Unknown date';
+
     return date.toLocaleDateString();
   }
 
-  const videos = useMemo(() => {
-    if (!authChecked) return [];
-    const videoMap = new Map<string, VideoWithClaims>();
-    rows.forEach((row) => {
-      if (!videoMap.has(row.video_id)) {
-        videoMap.set(row.video_id, {
-          video_id: row.video_id,
-          video_title: row.video_title,
-          video_published_at: row.video_published_at,
-          channel_name: row.channel_name,
-          video_url: row.video_url,
-          views: row.views,
-          claims: [],
-        });
-      }
-      const video = videoMap.get(row.video_id)!;
-      if (row.claim_text) {
-        video.claims.push({
-          claim: row.claim_text,
-          claim_number: video.claims.length + 1,
-        });
-      }
-    });
-    const groupedVideos = Array.from(videoMap.values());
-    groupedVideos.sort((a, b) => {
-      const aTime = a.video_published_at ? new Date(a.video_published_at).getTime() : 0;
-      const bTime = b.video_published_at ? new Date(b.video_published_at).getTime() : 0;
-      const aViews = a.views ?? 0;
-      const bViews = b.views ?? 0;
-      if (sortBy === 'oldest') return aTime - bTime;
-      if (sortBy === 'most_popular') return bViews - aViews;
-      return bTime - aTime;
-    });
-    return groupedVideos;
-  }, [rows, sortBy, authChecked]);
+  // const videos = useMemo(() => {
+  //   const sortedVideos = [...rows];
 
-  if (!authChecked) {
-    return (
-      <div className="flex items-center justify-center h-screen text-black">
-        Checking authentication...
-      </div>
-    );
-  }
+  //   sortedVideos.sort((a, b) => {
+  //     const aTime = a.published_at ? new Date(a.published_at).getTime() : 0;
+  //     const bTime = b.published_at ? new Date(b.published_at).getTime() : 0;
+  //     const aViews = a.views ?? 0;
+  //     const bViews = b.views ?? 0;
+
+  //     if (sortBy === 'oldest') return aTime - bTime;
+  //     if (sortBy === 'most_popular') return bViews - aViews;
+  //     return bTime - aTime;
+  //   });
+
+  //   return sortedVideos;
+  // }, [rows, sortBy]);
 
   const sortLabel =
     sortBy === 'oldest'
@@ -121,12 +138,42 @@ export default function Page() {
       ? 'Most Popular'
       : 'Newest';
 
+  const visiblePages = (() => {
+    const pages: (number | string)[] = [];
+
+    if (page <= 3) {
+      pages.push(1, 2, 3, 4, 5);
+      if (hasMore) pages.push("...");
+    } else {
+      pages.push(1, "...");
+      pages.push(page - 1, page, page + 1);
+      if (hasMore) pages.push("...");
+    }
+
+    return [...new Set(pages)].filter((p) => typeof p !== "number" || p > 0);
+  })();
+
+
+  const filteredRows = rows.filter((video) => {
+  const query = (search || '').toLowerCase();
+
+  return (
+    video.title?.toLowerCase().includes(query) ||
+    video.channel_name?.toLowerCase().includes(query) ||
+    video.claims?.some((claim) =>
+      claim.claim_text.toLowerCase().includes(query)
+    )
+  );
+});
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl text-black font-semibold">Claims Overview</h1>
-          <p className="text-black mt-1">Browse videos and the claims connected to each one.</p>
+          <p className="text-black mt-1">
+            Browse videos and the claims connected to each one.
+          </p>
         </div>
 
         <div className="relative">
@@ -178,77 +225,136 @@ export default function Page() {
           <Clock3 className="text-purple-600" />
           <div>
             <h2 className="font-semibold text-lg text-black">Videos</h2>
-            <p className="text-black text-sm">Videos and their related claims</p>
+            <p className="text-black text-sm">
+              Videos and their related claims
+            </p>
           </div>
         </div>
 
-        <div className="space-y-8">
-          {videos.map((video) => {
-            const embedVideoId =
-              video.video_url?.split('v=')[1]?.split('&')[0] || video.video_id;
+        {loading ? (
+            <p className="text-gray-600">Loading videos...</p>
+          ) : (
+            <>
+              {filteredRows.length === 0 && (
+                <p className="text-gray-500">No videos match your search</p>
+              )}
 
-            return (
-              <div
-                key={video.video_id}
-                className="border border-gray-200 rounded-lg p-5"
-              >
-                <div className="grid lg:grid-cols-[380px_1fr] gap-6">
-                  <div>
-                    {embedVideoId ? (
-                      <div className="rounded-lg overflow-hidden">
-                        <YouTubeEmbed
-                          videoid={embedVideoId}
-                          height={220}
-                          width={370}
-                        />
-                      </div>
-                    ) : (
-                      <div className="h-[220px] flex items-center justify-center bg-gray-100 rounded">
-                        <span className="text-sm text-gray-500">Video unavailable</span>
-                      </div>
-                    )}
-                  </div>
+              <div className="grid md:grid-cols-2 gap-6">
+            {filteredRows.map((video) => {
+              const embedVideoId =
+                video.video_url?.split('v=')[1]?.split('&')[0] || video.video_id;
+
+              return (
+                <div
+                  key={video.video_id}
+                  className="bg-white border border-gray-200 rounded-lg p-4 space-y-4"
+                >
+                  {embedVideoId ? (
+                    <YouTubeEmbed videoid={embedVideoId} />
+                  ) : (
+                    <div className="h-[220px] flex items-center justify-center bg-gray-100 rounded">
+                      <span className="text-sm text-gray-500">Video unavailable</span>
+                    </div>
+                  )}
 
                   <div>
-                    <h3 className="text-gray-900 font-semibold text-lg">
-                      {video.video_title || 'Untitled Video'}
+                    <h3 className="font-semibold text-gray-900">
+                      {video.title || 'Untitled Video'}
                     </h3>
 
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-sm text-gray-600">
                       {video.channel_name || 'Unknown channel'}
                     </p>
 
-                    <p className="text-sm text-gray-500 mt-1 mb-4">
-                      {formatDate(video.video_published_at)}
+                    <p className="text-sm text-gray-500">
+                      {formatDate(video.published_at)}
                       {video.views !== null && video.views !== undefined
                         ? ` • ${video.views.toLocaleString()} views`
                         : ''}
                     </p>
+                  </div>
 
-                    <div className="space-y-3">
-                      {video.claims.length > 0 ? (
-                        video.claims.map((claimItem) => (
-                          <div
-                            key={`${video.video_id}-${claimItem.claim_number}`}
-                            className="bg-gray-50 rounded-md p-3"
-                          >
-                            <p className="text-sm font-medium text-gray-700 mb-1">
-                              Claim {claimItem.claim_number}
-                            </p>
-                            <p className="text-gray-800 text-sm">
-                              {claimItem.claim}
-                            </p>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Claims</h4>
+
+                    {video.claims && video.claims.length > 0 ? (
+                      <div>
+                        <ul className="list-disc pl-5 space-y-1 text-sm text-gray-700">
+                          {(expandedVideos[video.video_id]
+                            ? video.claims
+                            : video.claims.slice(0, 2)
+                          ).map((claim) => (
+                            <li key={claim.claim_id}>{claim.claim_text}</li>
+                          ))}
+                        </ul>
+
+                        {video.claims.length > 2 && (
+                          <div className="flex justify-center mt-3">
+                            <button
+                              onClick={() =>
+                                setExpandedVideos((prev) => ({
+                                  ...prev,
+                                  [video.video_id]: !prev[video.video_id],
+                                }))
+                              }
+                              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                            >
+                              {expandedVideos[video.video_id]
+                                ? "Hide extra claims ▲"
+                                : `Show ${video.claims.length - 2} more claim(s) ▼`}
+                            </button>
                           </div>
-                        ))
-                      ) : (
-                        <p className="text-sm text-gray-500">no claims on this video</p>
-                      )}
-                    </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500">
+                        No claims on this video
+                      </p>
+                    )}
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+          </>
+        )}
+
+        <div className="flex items-center justify-center gap-2 mt-8 flex-wrap">
+          <button
+            onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+            disabled={page === 1}
+            className="px-4 py-2 rounded bg-gray-200 text-gray-800 disabled:opacity-50"
+          >
+            Previous
+          </button>
+
+          {visiblePages.map((item, index) =>
+            item === "..." ? (
+              <span key={`ellipsis-${index}`} className="px-2 text-gray-500">
+                ...
+              </span>
+            ) : (
+              <button
+                key={item}
+                onClick={() => setPage(item as number)}
+                className={`px-3 py-2 rounded text-sm ${
+                  page === item
+                    ? "bg-gray-700 text-white"
+                    : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                }`}
+              >
+                {item}
+              </button>
+            )
+          )}
+
+          <button
+            onClick={() => setPage((prev) => prev + 1)}
+            disabled={!hasMore}
+            className="px-4 py-2 rounded bg-gray-700 text-white disabled:opacity-50"
+          >
+            Next
+          </button>
         </div>
       </div>
     </div>

@@ -38,7 +38,7 @@ export default function Header() {
       }`}
     >
       <div className="max-w-7xl mx-auto">
-        <Link href="/" className="text-lg font-semibold hover:opacity-80">
+        <Link href="/home" className="text-lg font-semibold hover:opacity-80">
           YouTube Intelligence Platform
         </Link>
       </div>

@@ -185,8 +185,16 @@ export default function NarrativeDetailPage() {
               </ul>
 
               {video.claims.length > 2 && (
-                <details className="mt-2 group">
-                  <summary className="cursor-pointer list-none inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800">
+                <details className="mt-3 group">
+                  <div className="pt-2">
+                    <ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">
+                      {video.claims.slice(2).map((claim, idx) => (
+                        <li key={idx}>{claim}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <summary className="mt-3 cursor-pointer list-none flex justify-center items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800">
                     <span className="group-open:hidden">
                       Show {video.claims.length - 2} more claim(s)
                     </span>
@@ -199,12 +207,6 @@ export default function NarrativeDetailPage() {
                       ⌄
                     </span>
                   </summary>
-
-                  <ul className="list-disc pl-5 pt-2 text-sm text-gray-700 space-y-1">
-                    {video.claims.slice(2).map((claim, idx) => (
-                      <li key={idx}>{claim}</li>
-                    ))}
-                  </ul>
                 </details>
               )}
             </div>

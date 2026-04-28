@@ -4,6 +4,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, FileText, Gauge, Settings, Menu, Bell, Search, User } from 'lucide-react';
 import { useState } from 'react';
+import React from 'react';
+import { SearchContext } from '@/app/context/SearchContext';
+
 
 export default function DashboardLayout({
   children,
@@ -13,8 +16,10 @@ export default function DashboardLayout({
 
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [search, setSearch] = useState('');
 
   const navigation = [
+    { name: 'Home', href: '/home', icon: LayoutDashboard},
     { name: 'Claims', href: '/', icon: LayoutDashboard },
     { name: 'Narratives', href: '/narratives', icon: FileText },
     { name: 'Sentiments', href: '/sentiment', icon: Gauge },
@@ -58,6 +63,8 @@ export default function DashboardLayout({
               <input
                 type="text"
                 placeholder="Search..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -79,7 +86,9 @@ export default function DashboardLayout({
           </div>
         </header>
         <main className="flex-1 p-6">
-          {children}
+          <SearchContext.Provider value={search}>
+            {children}
+          </SearchContext.Provider>
         </main>
       </div>
     </div>
