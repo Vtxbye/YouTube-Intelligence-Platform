@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { LayoutDashboard, FileText, Gauge, Settings, Menu, Bell, Search, User } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { LayoutDashboard, FileText, Gauge, Settings, Menu, Bell, Search, User, LogOut } from 'lucide-react';
 import { useState } from 'react';
 import React from 'react';
 import { SearchContext } from '@/app/context/SearchContext';
@@ -15,8 +15,14 @@ export default function DashboardLayout({
 }) {
 
   const pathname = usePathname();
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [search, setSearch] = useState('');
+
+  function handleSignOut() {
+    clearAuthSession();
+    router.replace('/signin');
+  }
 
   const navigation = [
     { name: 'Home', href: '/home', icon: LayoutDashboard},
@@ -77,11 +83,23 @@ export default function DashboardLayout({
             </button>
 
             <div className="flex items-center gap-3">
-              <Link href="/signup">
-                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-700 transition-colors">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Open account menu"
+                    className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  >
                   <User className="w-5 h-5 text-white" />
-                </div>
-              </Link>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-40">
+                  <DropdownMenuItem onSelect={handleSignOut} variant="destructive">
+                    <LogOut className="w-4 h-4" />
+                    Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </header>

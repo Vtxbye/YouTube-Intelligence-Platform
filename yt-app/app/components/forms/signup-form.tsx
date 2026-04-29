@@ -37,6 +37,25 @@ const styles = {
   link: "ml-2 text-gray-900 hover:text-black font-medium",
 };
 
+const passwordRequirements = [
+  {
+    label: "At least 8 characters",
+    isValid: (value: string) => value.length >= 8,
+  },
+  {
+    label: "At least 1 capital letter",
+    isValid: (value: string) => /[A-Z]/.test(value),
+  },
+  {
+    label: "At least 1 special character",
+    isValid: (value: string) => /[^A-Za-z0-9]/.test(value),
+  },
+];
+
+function validatePassword(password: string) {
+  return passwordRequirements.find((requirement) => !requirement.isValid(password))?.label || "";
+}
+
 export function SignupForm() {
   const router = useRouter();
 
@@ -47,16 +66,23 @@ export function SignupForm() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
-      if (user) router.replace("/");
-    });
-    return () => unsub();
+    if (hasAuthSession()) {
+      router.replace("/");
+    }
   }, [router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
     setError("");
+
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      setError(passwordError);
+      toast.error(passwordError);
+      return;
+    }
+
+    setLoading(true);
 
     try {
       await createUserWithEmailAndPassword(auth, email, password);

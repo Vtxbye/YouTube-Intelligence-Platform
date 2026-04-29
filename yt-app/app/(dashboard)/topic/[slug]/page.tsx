@@ -35,7 +35,7 @@ export default function TopicPage() {
 
     async function fetchVideos() {
       try {
-        const res = await fetch('https://youtube-intelligence-platform-api.onrender.com/videos');
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/videos`);
         if (!res.ok) {
           throw new Error('Failed to fetch videos');
         }
