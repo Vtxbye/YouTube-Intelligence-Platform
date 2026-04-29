@@ -10,6 +10,13 @@ from googleapiclient.errors import HttpError
 FIELDS = ["video_id","title","channel","published_at","duration_seconds","views","url","matched_keywords"]
 TRANSCRIPTS_FILE = os.getenv("TRANSCRIPTS_FILE", "/data/transcripts.json")
 TRANSCRIPT_STATUS_FILE = os.getenv("TRANSCRIPT_STATUS_FILE", "/data/transcript_status.json")
+COMMENTS_FILE = os.getenv("COMMENTS_FILE", "/data/comments.json")
+COMMENT_STATUS_FILE = os.getenv("COMMENT_STATUS_FILE", "/data/comment_status.json")
+CLAIMS_CSV_FILE = os.getenv("CLAIMS_CSV", "/data/claims.csv")
+CLAIM_STATUS_FILE = os.getenv("CLAIM_STATUS_FILE", "/data/claim_status.json")
+NARRATIVES_CSV = os.getenv("NARRATIVES_CSV", "/data/generated_narratives_and_claims_formatted.csv")
+CLAIMS_FIELDS = ["video_id","url","title","channel","claim_number","claim","narrative"]
+NARRATIVES_FIELDS = ["narrative_group","narrative","video_id","claim_number","claim"]
 
 HEALTH = ["health","healthy","wellness","nutrition","diet","protein","fitness","workout","exercise",
           "sleep","stress","mental","mindfulness","meditation","recovery","lifestyle","habit","longevity",
@@ -78,19 +85,23 @@ def ensure_header(path):
         w.writerows(rows)
 
 def prune(path, months_back):
-    if not os.path.exists(path): return 0
+    if not os.path.exists(path): return set()
     ensure_header(path)
     cutoff = now() - relativedelta(months=months_back)
-    kept=[]
+    kept=[]; pruned_ids=set()
     with open(path,"r",newline="",encoding="utf-8") as f:
         for row in csv.DictReader(f):
             pub=ts((row.get("published_at") or "").strip())
-            if pub and pub>=cutoff: kept.append(row)
+            if pub and pub>=cutoff:
+                kept.append(row)
+            else:
+                vid=(row.get("video_id") or "").strip()
+                if vid: pruned_ids.add(vid)
     tmp=path+".tmp"
     with open(tmp,"w",newline="",encoding="utf-8") as f:
         w=csv.DictWriter(f,fieldnames=FIELDS); w.writeheader(); w.writerows(kept)
     os.replace(tmp,path)
-    return len(kept)
+    return pruned_ids
 
 def dedup_csv(path):
     """Remove duplicate video_id rows from the CSV, keeping the first occurrence."""
@@ -111,6 +122,68 @@ def dedup_csv(path):
         os.replace(tmp,path)
         print(f"[dedup] Removed {removed} duplicate rows")
     return removed
+
+def _purge_video_data(removed_ids):
+    """Remove all associated data for the given video IDs from every data file."""
+    if not removed_ids:
+        return
+
+    # JSON files keyed by video_id
+    for fpath in (TRANSCRIPTS_FILE, TRANSCRIPT_STATUS_FILE, COMMENTS_FILE, COMMENT_STATUS_FILE, CLAIM_STATUS_FILE):
+        if not os.path.exists(fpath): continue
+        try:
+            with open(fpath,"r",encoding="utf-8") as f: data=json.load(f)
+            pruned={vid:v for vid,v in data.items() if vid not in removed_ids}
+            if len(pruned) < len(data):
+                tmp=fpath+".tmp"
+                with open(tmp,"w",encoding="utf-8") as f: json.dump(pruned,f,indent=2,ensure_ascii=False)
+                os.replace(tmp,fpath)
+                print(f"[purge] Removed {len(data)-len(pruned)} entries from {os.path.basename(fpath)}")
+        except Exception as e:
+            print(f"[warn] Could not update {os.path.basename(fpath)}: {e}")
+
+    # claims.csv — remove rows for removed video IDs
+    if os.path.exists(CLAIMS_CSV_FILE):
+        try:
+            with open(CLAIMS_CSV_FILE,"r",newline="",encoding="utf-8") as f: rows=list(csv.DictReader(f))
+            kept=[r for r in rows if r.get("video_id") not in removed_ids]
+            if len(kept) < len(rows):
+                tmp=CLAIMS_CSV_FILE+".tmp"
+                with open(tmp,"w",newline="",encoding="utf-8") as f:
+                    w=csv.DictWriter(f,fieldnames=CLAIMS_FIELDS,extrasaction="ignore"); w.writeheader(); w.writerows(kept)
+                os.replace(tmp,CLAIMS_CSV_FILE)
+                print(f"[purge] Removed {len(rows)-len(kept)} rows from {os.path.basename(CLAIMS_CSV_FILE)}")
+        except Exception as e:
+            print(f"[warn] Could not update {os.path.basename(CLAIMS_CSV_FILE)}: {e}")
+
+    # narratives CSV — remove claim rows for removed IDs, then drop orphaned narrative headers
+    if os.path.exists(NARRATIVES_CSV):
+        try:
+            with open(NARRATIVES_CSV,"r",newline="",encoding="utf-8") as f: rows=list(csv.DictReader(f))
+            # Split into groups of (header_row, [claim_rows])
+            groups=[]; current_header=None; current_claims=[]
+            for row in rows:
+                if row.get("narrative_group") and not row.get("video_id"):
+                    if current_header is not None: groups.append((current_header,current_claims))
+                    current_header=row; current_claims=[]
+                else:
+                    current_claims.append(row)
+            if current_header is not None: groups.append((current_header,current_claims))
+            # Rebuild keeping only groups that still have claims
+            kept_rows=[]; removed_count=0
+            for header,claims in groups:
+                filtered=[c for c in claims if c.get("video_id") not in removed_ids]
+                removed_count+=len(claims)-len(filtered)
+                if filtered: kept_rows.append(header); kept_rows.extend(filtered)
+            if removed_count > 0:
+                tmp=NARRATIVES_CSV+".tmp"
+                with open(tmp,"w",newline="",encoding="utf-8") as f:
+                    w=csv.DictWriter(f,fieldnames=NARRATIVES_FIELDS); w.writeheader(); w.writerows(kept_rows)
+                os.replace(tmp,NARRATIVES_CSV)
+                print(f"[purge] Removed {removed_count} claim rows from {os.path.basename(NARRATIVES_CSV)}")
+        except Exception as e:
+            print(f"[warn] Could not update {os.path.basename(NARRATIVES_CSV)}: {e}")
+
 
 def check_and_remove_unavailable(path, y):
     """Remove rows for videos that are deleted, private, or otherwise unavailable."""
@@ -139,18 +212,8 @@ def check_and_remove_unavailable(path, y):
         w=csv.DictWriter(f,fieldnames=FIELDS,extrasaction="ignore"); w.writeheader(); w.writerows(kept)
     os.replace(tmp, path)
 
-    # Remove unavailable videos from transcripts.json and transcript_status.json
-    for fpath in (TRANSCRIPTS_FILE, TRANSCRIPT_STATUS_FILE):
-        if not os.path.exists(fpath): continue
-        try:
-            with open(fpath,"r",encoding="utf-8") as f: tx=json.load(f)
-            pruned={vid: t for vid, t in tx.items() if vid not in removed_ids}
-            if len(pruned) < len(tx):
-                with open(fpath,"w",encoding="utf-8") as f: json.dump(pruned,f,indent=2,ensure_ascii=False)
-        except Exception as e:
-            print(f"[warn] Could not update {os.path.basename(fpath)}: {e}")
-
     print(f"[health] Removed {len(removed_ids)} unavailable video(s): {', '.join(removed_ids)}")
+    _purge_video_data(removed_ids)
     return len(removed_ids)
 
 def count_csv_rows(path):
@@ -368,7 +431,7 @@ def playlist_page(y, plid, token):
     try:
         resp=y.playlistItems().list(part="contentDetails", playlistId=plid, maxResults=50, pageToken=token).execute()
     except HttpError as e:
-        if e.resp.status == 404:
+        if int(e.resp.status) == 404:
             print(f"[warn] Playlist not found, skipping: {plid}")
             return [], None
         raise
@@ -620,7 +683,10 @@ def main():
     # Prune only after a successful write — network failure before this point
     # leaves the CSV untouched rather than shrunk-but-not-refilled.
     if added_rows > 0:
-        prune(out_csv, months_back)
+        pruned_ids = prune(out_csv, months_back)
+        if pruned_ids:
+            print(f"[prune] Pruned {len(pruned_ids)} expired video(s)")
+            _purge_video_data(pruned_ids)
 
     state["last_run_utc"]=iso(now())
     state["seen_video_ids"]=sorted(list(seen))[-300000:]

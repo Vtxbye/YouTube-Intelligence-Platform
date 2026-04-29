@@ -1,36 +1,45 @@
 import os
 from dotenv import load_dotenv, find_dotenv
 from pathlib import Path
-import psycopg2
 from psycopg2.extras import RealDictCursor
+from psycopg2.pool import SimpleConnectionPool
 
 load_dotenv(find_dotenv())
 
 POSTGRES_URL = os.getenv("POSTGRES_URL")
 
-def db_connect(url):
-  return psycopg2.connect(url)
+pool = SimpleConnectionPool(
+  minconn=1,
+  maxconn=10,
+  dsn=POSTGRES_URL
+)
 
 def execute(query, params=None, fetch_one=False, fetch_all=False):
-  conn = db_connect(POSTGRES_URL)
-  cur = conn.cursor(cursor_factory=RealDictCursor)
-
+  conn = None
   try:
+    conn = pool.getconn()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+
     cur.execute(query, params or ())
+
     if fetch_one:
       result = cur.fetchone()
     elif fetch_all:
       result = cur.fetchall()
     else:
       result = None
+
     conn.commit()
     return result
+
   except Exception as e:
-    conn.rollback()
+    if conn:
+      conn.rollback()
     raise e
+
   finally:
-    cur.close()
-    conn.close()
+    if conn:
+      pool.putconn(conn)
 
 def create_tables(path):
   with open(path, "r") as file:

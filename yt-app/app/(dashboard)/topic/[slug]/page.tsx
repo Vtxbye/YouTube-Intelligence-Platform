@@ -32,10 +32,10 @@ export default function TopicPage() {
   useEffect(() => {
 
     console.log("FETCHING VIDEOS...");
-    
+
     async function fetchVideos() {
       try {
-        const res = await fetch('http://localhost:8000/video-data');
+        const res = await fetch('https://youtube-intelligence-platform-api.onrender.com/videos');
         if (!res.ok) {
           throw new Error('Failed to fetch videos');
         }

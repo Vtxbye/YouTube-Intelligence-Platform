@@ -4,3 +4,4 @@ isodate==0.6.1
 requests==2.32.3
 yt-dlp
 pandas
+google-generativeai

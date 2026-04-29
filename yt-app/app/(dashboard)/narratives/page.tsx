@@ -1,306 +1,282 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TrendingUp } from 'lucide-react';
-import { YouTubeEmbed } from '@next/third-parties/google';
+import Link from 'next/link';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend
+} from 'recharts';
 
-const mockNarratives = [
-  {
-    id: 1,
-    narrative: "Exercise and mental state significantly influence physical performance and long-term metabolic health.",
-    videos: [
-      {
-        video_id: "9GzlbLIU5dU",
-        claims: [
-          "Emotional state influences workout effectiveness.",
-          "Neurogenesis occurs in the adult brain.",
-          "Motivation affects physical endurance."
-        ]
-      },
-      {
-        video_id: "3JZ_D3ELwOQ",
-        claims: [
-          "Combining cardio and strength improves metabolic health.",
-          "Consistency matters more than intensity.",
-          "Exercise improves cognitive function."
-        ]
-      }
-    ]
-  },
-  {
-    id: 2,
-    narrative: "Sleep and recovery are essential for hormonal balance, muscle repair, and cognitive performance.",
-    videos: [
-      {
-        video_id: "eh0DoBsiLgU",
-        claims: [
-          "Sleep deprivation reduces muscle recovery.",
-          "Poor sleep affects insulin sensitivity.",
-          "REM sleep is critical for memory."
-        ]
-      },
-      {
-        video_id: "e-ORhEE9VVg",
-        claims: [
-          "Deep sleep supports brain detoxification.",
-          "Irregular sleep disrupts circadian rhythm.",
-          "Sleep improves reaction time."
-        ]
-      }
-    ]
-  },
-  {
-    id: 3,
-    narrative: "Nutrition and gut health are foundational to immunity, digestion, and long-term disease prevention.",
-    videos: [
-      {
-        video_id: "kXYiU_JCYtU",
-        claims: [
-          "Gut microbiome diversity impacts immune function.",
-          "Fiber supports beneficial bacteria.",
-          "Processed foods harm gut health."
-        ]
-      },
-      {
-        video_id: "RgKAFK5djSk",
-        claims: [
-          "Micronutrients are essential for energy production.",
-          "Hydration affects digestion.",
-          "Balanced diets reduce inflammation."
-        ]
-      }
-    ]
-  },
-  {
-    id: 4,
-    narrative: "Stress management plays a critical role in preventing chronic disease and improving mental health.",
-    videos: [
-      {
-        video_id: "hT_nvWreIhg",
-        claims: [
-          "Chronic stress elevates cortisol levels.",
-          "Stress weakens immune response.",
-          "Mindfulness reduces anxiety."
-        ]
-      },
-      {
-        video_id: "OPf0YbXqDm0",
-        claims: [
-          "Breathing exercises lower heart rate.",
-          "Stress impacts digestion.",
-          "Relaxation improves sleep quality."
-        ]
-      }
-    ]
-  },
-  {
-    id: 5,
-    narrative: "Weight loss strategies vary widely, but sustainable approaches focus on consistency, nutrition, and lifestyle changes.",
-    videos: [
-      {
-        video_id: "2Vv-BfVoq4g",
-        claims: [
-          "Calorie deficits drive weight loss.",
-          "Crash diets are not sustainable.",
-          "Protein intake supports fat loss."
-        ]
-      },
-      {
-        video_id: "JGwWNGJdvx8",
-        claims: [
-          "Metabolism adapts over time.",
-          "Exercise alone is not enough for weight loss.",
-          "Lifestyle changes improve long-term success."
-        ]
-      }
-    ]
-  },
-  {
-    id: 6,
-    narrative: "The immune system is influenced by lifestyle factors such as diet, sleep, exercise, and stress levels.",
-    videos: [
-      {
-        video_id: "fRh_vgS2dFE",
-        claims: [
-          "Sleep strengthens immune response.",
-          "Nutrition impacts immune defense.",
-          "Stress suppresses immunity."
-        ]
-      },
-      {
-        video_id: "ktvTqknDobU",
-        claims: [
-          "Exercise boosts immune surveillance.",
-          "Vitamin deficiencies weaken immunity.",
-          "Hydration supports cellular function."
-        ]
-      }
-    ]
-  }
-];
+type Narrative = {
+  narrative_id: number;
+  narrative_text: string;
+  claim_count: number;
+};
 
-interface ClaimVideo {
-  video_id: string;
-  claims: string[];
-}
+type NarrativeTrendRow = {
+  narrative_id: number;
+  narrative_text: string;
+  claim_date: string;
+  claims_on_date: number;
+  claims_7d_avg: number;
+};
 
-interface Narrative {
-  id: number;
-  narrative: string;
-  videos: ClaimVideo[];
+type NarrativeWithMeta = Narrative & {
+  color: string;
+  chart_label: string;
+};
+
+function generateColor(i: number) {
+  const hue = (i * 137.508) % 360;
+  return `hsl(${hue}, 65%, 50%)`;
 }
 
 export default function Page() {
+  const [narratives, setNarratives] = useState<NarrativeWithMeta[]>([]);
+  const [trends, setTrends] = useState<NarrativeTrendRow[]>([]);
+  const [selectedNarratives, setSelectedNarratives] = useState<string[]>([]);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [highlighted, setHighlighted] = useState<string | null>(null);
 
-  const [narratives] = useState<Narrative[]>(mockNarratives);
-  const [selectedNarrative, setSelectedNarrative] = useState<Narrative | null>(mockNarratives[0]);
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [narrativesRes, trendsRes] = await Promise.all([
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/narratives`),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/narratives-trends`)
+        ]);
 
-//   useEffect(() => {
-//     fetch('http://localhost:8000/api/narratives')
-//       .then(res => res.json())
-//       .then(res => {
-//         console.log("API:", res);
+        const narrativesData: Narrative[] = await narrativesRes.json();
+        const trendsData: NarrativeTrendRow[] = await trendsRes.json();
 
-//         // Fix your previous error here 
-//         const data = Array.isArray(res)
-//           ? res
-//           : Array.isArray(res.narratives)
-//           ? res.narratives
-//           : Object.values(res);
+        const filtered = narrativesData
+          .filter(n => n.claim_count > 0)
+          .map((n, index) => ({
+            ...n,
+            color: generateColor(index),
+            chart_label: `N${index + 1}`
+          }));
 
-//         setNarratives(data);
-//         setSelectedNarrative(data[0]);
-//       });
-//   }, []);
+        setNarratives(filtered);
+        setTrends(trendsData);
 
-// useEffect(() => {
-//   setNarratives(mockNarratives);
-//   setSelectedNarrative(mockNarratives[0]);
-// }, []);
+        setSelectedNarratives(filtered.slice(0, 5).map(n => n.chart_label));
+      } catch (err) {
+        console.error("Error fetching narrative data:", err);
+      }
+    }
+
+    fetchData();
+  }, []);
+
+  const toggleNarrative = (label: string) => {
+    setSelectedNarratives(prev =>
+      prev.includes(label)
+        ? prev.filter(x => x !== label)
+        : [...prev, label]
+    );
+  };
+
+  const graphData = useMemo(() => {
+    const idToLabel = new Map(
+      narratives.map(n => [n.narrative_id, n.chart_label])
+    );
+
+    const monthMap = new Map<string, Record<string, number | string>>();
+
+    trends.forEach(row => {
+      const label = idToLabel.get(row.narrative_id);
+      if (!label) return;
+
+      const date = new Date(row.claim_date);
+      if (isNaN(date.getTime())) return;
+
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+      if (!monthMap.has(key)) {
+        monthMap.set(key, { monthKey: key });
+      }
+
+      const bucket = monthMap.get(key)!;
+      bucket[label] = (Number(bucket[label]) || 0) + row.claims_on_date
+    });
+
+    const sortedKeys = Array.from(monthMap.keys()).sort();
+
+    return sortedKeys.map(key => {
+      const [year, month] = key.split('-');
+      const date = new Date(Number(year), Number(month) - 1);
+
+      const row = { ...monthMap.get(key)! };
+
+      narratives.forEach(n => {
+        if (row[n.chart_label] === undefined) {
+          row[n.chart_label] = 0;
+        }
+      });
+
+      row.month = date.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+
+      return row;
+    });
+  }, [narratives, trends]);
 
   return (
     <div className="space-y-6">
-
-      {/* Header */}
       <div>
-        <h1 className="text-2xl text-black font-semibold"></h1>
+        <h1 className="text-2xl text-black font-semibold">Narratives</h1>
         <p className="text-black mt-1">
-          
+          Narrative clusters and their activity over time.
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
-
-        {/* LEFT: Narratives List (like Trending Topics) */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* LEFT SIDE */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6 max-h-[80vh] overflow-y-auto">
           <div className="flex items-center gap-3 mb-6">
-            <TrendingUp className="text-purple-600"/>
+            <TrendingUp className="text-purple-600" />
             <div>
-              <h2 className="font-semibold text-lg text-black">
-                Trending Narratives
-              </h2>
-              <p className="text-black text-sm">
-                Patterns of claims across videos
-              </p>
+              <h2 className="font-semibold text-lg text-black">Trending Narratives</h2>
+              <p className="text-black text-sm">Narratives with active claims</p>
             </div>
           </div>
 
           <ul className="space-y-3">
-
-            {narratives.map((narrative, index) => (
-
-              <li key={narrative.id || index}>
-
-                <button
-                  onClick={() => setSelectedNarrative(narrative)}
-                  className={`w-full text-left p-3 rounded-lg transition ${
-                    selectedNarrative?.id === narrative.id
-                      ? 'bg-gray-100'
-                      : 'hover:bg-gray-50'
-                  }`}
+            {narratives.map(n => (
+              <li
+                key={n.narrative_id}
+                className={`transition-colors duration-300 ${
+                  highlighted === n.chart_label ? "bg-yellow-100" : ""
+                }`}
+              >
+                <Link
+                  href={`/narratives/${n.narrative_id}`}
+                  className="block p-3 rounded-lg hover:bg-gray-50"
                 >
+                  <div className="flex items-start gap-3">
+                    <div
+                      className="w-2 h-2 rounded-full mt-2 shrink-0"
+                      style={{ backgroundColor: n.color }}
+                    />
 
-                  <div>
-                    <span className="text-gray-800 font-medium">
-                      {narrative.id}
-                    </span>
-
-                    <p className="text-gray-500 text-sm line-clamp-2">
-                      {narrative.narrative}
-                    </p>
-                  </div>
-
-                </button>
-
-              </li>
-
-            ))}
-
-          </ul>
-
-        </div>
-
-        {/* RIGHT: Narrative Details (like Chart Area) */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-
-          {!selectedNarrative ? (
-            <p className="text-gray-500">Select a narrative</p>
-          ) : (
-            <div className="space-y-6">
-
-              {/* Narrative Title */}
-              <div>
-                <h3 className="text-xl font-semibold text-black">
-                  {selectedNarrative.id}
-                </h3>
-
-                <p className="text-gray-600 mt-2">
-                  {selectedNarrative.narrative}
-                </p>
-              </div>
-
-              {/* Videos */}
-              <div className="space-y-6">
-
-                {selectedNarrative.videos?.map((video: any, i: number) => (
-
-                  <div
-                    key={i}
-                    className="border rounded-lg p-4 space-y-3"
-                  >
-
-                    {/* Video */}
-                    <YouTubeEmbed videoid={video.video_id} />
-
-                    {/* Claims */}
                     <div>
-                      <h4 className="font-semibold text-black mb-2">
-                        Claims
-                      </h4>
-
-                      <ul className="list-disc pl-5 text-gray-700 space-y-1">
-
-                        {video.claims?.map((claim: string, idx: number) => (
-                          <li key={idx}>{claim}</li>
-                        ))}
-
-                      </ul>
+                      <span className="text-gray-800 font-medium">
+                        {n.narrative_text}
+                      </span>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {n.claim_count} {n.claim_count === 1 ? "claim" : "claims"}
+                      </p>
                     </div>
-
                   </div>
-
-                ))}
-
-              </div>
-
-            </div>
-          )}
-
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
 
-      </div>
+        {/* RIGHT SIDE — GRAPH */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex justify-between mb-4">
+            <h3 className="font-semibold text-black">Narratives over time</h3>
 
+            <div className="relative">
+              <button
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className="bg-gray-700 text-white px-3 py-1 rounded text-sm"
+              >
+                Select Narratives
+              </button>
+
+              {dropdownOpen && (
+                <div className="absolute right-0 mt-2 bg-white border rounded shadow p-3 space-y-2 z-50 max-h-72 overflow-y-auto min-w-72">
+                  {narratives.map(n => (
+                    <label
+                      key={n.narrative_id}
+                      className="flex items-center gap-2 text-sm text-gray-900 font-medium hover:bg-gray-100 px-2 py-1 rounded cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedNarratives.includes(n.chart_label)}
+                        onChange={() => toggleNarrative(n.chart_label)}
+                      />
+
+                      <span
+                        className="w-2 h-2 rounded-full inline-block"
+                        style={{ backgroundColor: n.color }}
+                      />
+
+                      <span className="font-semibold">{n.chart_label}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <ResponsiveContainer width="100%" height={340}>
+            <LineChart data={graphData} margin={{ top: 20, right: 30, left: 10, bottom: 40 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+
+              <XAxis
+                dataKey="month"
+                tick={{ fontSize: 12 }}
+                angle={-35}
+                textAnchor="end"
+                height={60}
+              />
+
+              <YAxis
+                tick={{ fontSize: 12 }}
+                label={{
+                  value: "Claims per Month",
+                  angle: -90,
+                  position: "insideLeft",
+                  style: { textAnchor: "middle", fill: "#555", fontSize: 12 }
+                }}
+              />
+
+              {/* Tooltip now shows only label + value */}
+              <Tooltip
+                formatter={(value, key) => [value, key]}
+                labelStyle={{ fontWeight: 600 }}
+              />
+
+              {/* Legend now shows only N1, N2, etc. */}
+              <Legend verticalAlign="top" height={40} />
+
+              {narratives
+                .filter(n => selectedNarratives.includes(n.chart_label))
+                .map(n => {
+                  return (
+                    <Line
+                      key={n.narrative_id}
+                      type="monotone"
+                      dataKey={n.chart_label}
+                      stroke={n.color}
+                      strokeWidth={highlighted === n.chart_label ? 4 : 2}
+                      dot={false}
+                      activeDot={{ r: 6 }}
+                      onMouseEnter={() => setHighlighted(n.chart_label)}
+                      onMouseLeave={() => setHighlighted(null)}
+                      onClick={() =>
+                        setHighlighted(prev =>
+                          prev === n.chart_label ? null : n.chart_label
+                        )
+                      }
+                    />
+                  );
+                })}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,0 +1,22 @@
+name: Refresh DB Views
+
+on:
+  schedule:
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    if: github.repository == 'KBui4/YouTube-Intelligence-Platform'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Refresh materialized view
+        env:
+          DATABASE_URL: ${{ secrets.POSTGRES_URL }}
+        run: |
+          psql "$DATABASE_URL" -c "REFRESH MATERIALIZED VIEW CONCURRENTLY narrative_claim_video_view;"
+          psql "$DATABASE_URL" -c "REFRESH MATERIALIZED VIEW CONCURRENTLY narrative_trends_view;"

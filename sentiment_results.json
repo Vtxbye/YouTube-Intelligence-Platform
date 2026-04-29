@@ -1,0 +1,70 @@
+[
+  {
+    "id": 1,
+    "title": "AI in Healthcare Trends",
+    "channel": "Health Insights",
+    "timestamp": "2 hours ago",
+    "youtubeId": "dQw4w9WgXcQ",
+    "transcriptSentiment": "Positive",
+    "positiveComments": [
+      {
+        "text": "Very informative breakdown",
+        "sentiment": "Positive"
+      },
+      {
+        "text": "This was helpful",
+        "sentiment": "Positive"
+      },
+      {
+        "text": "Loved the explanation",
+        "sentiment": "Positive"
+      }
+    ],
+    "negativeComments": [
+      {
+        "text": "Missed some risk concerns",
+        "sentiment": "Negative"
+      }
+    ],
+    "neutralComments": [
+      {
+        "text": "Too optimistic in my opinion",
+        "sentiment": "Neutral"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "title": "Vaccine Debate on Social Media",
+    "channel": "Medical Watch",
+    "timestamp": "5 hours ago",
+    "youtubeId": "M7lc1UVf-VE",
+    "transcriptSentiment": "Negative",
+    "positiveComments": [
+      {
+        "text": "Good discussion overall",
+        "sentiment": "Positive"
+      }
+    ],
+    "negativeComments": [
+      {
+        "text": "This seems misleading",
+        "sentiment": "Negative"
+      }
+    ],
+    "neutralComments": [
+      {
+        "text": "Needs fact checking",
+        "sentiment": "Neutral"
+      },
+      {
+        "text": "I do not trust this source",
+        "sentiment": "Neutral"
+      },
+      {
+        "text": "Interesting perspective",
+        "sentiment": "Neutral"
+      }
+    ]
+  }
+]

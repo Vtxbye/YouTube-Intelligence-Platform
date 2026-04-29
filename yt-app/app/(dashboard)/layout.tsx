@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, BarChart3, FileText, Settings, Menu, Bell, Search, User } from 'lucide-react';
+import { LayoutDashboard, FileText, Gauge, Settings, Menu, Bell, Search, User } from 'lucide-react';
 import { useState } from 'react';
 
 export default function DashboardLayout({
@@ -15,9 +15,9 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const navigation = [
-    { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-    { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+    { name: 'Claims', href: '/', icon: LayoutDashboard },
     { name: 'Narratives', href: '/narratives', icon: FileText },
+    { name: 'Sentiments', href: '/sentiment', icon: Gauge },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
 
@@ -70,13 +70,14 @@ export default function DashboardLayout({
             </button>
 
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                <User className="w-5 h-5 text-white" />
-              </div>
+              <Link href="/signup">
+                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-700 transition-colors">
+                  <User className="w-5 h-5 text-white" />
+                </div>
+              </Link>
             </div>
           </div>
         </header>
-
         <main className="flex-1 p-6">
           {children}
         </main>
