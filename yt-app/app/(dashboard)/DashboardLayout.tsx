@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, FileText, Gauge, Settings, Menu, Bell, Search, User, LogOut } from 'lucide-react';
+import { LayoutDashboard, FileText, Gauge, Settings, Menu, Bell, Search, User, LogOut, Home } from 'lucide-react';
 import { useState } from 'react';
 import React from 'react';
 import { SearchContext } from '@/app/utils/SearchContext';
@@ -30,7 +30,7 @@ export default function DashboardLayout({
   }
 
   const navigation = [
-    { name: 'Home', href: '/', icon: LayoutDashboard},
+    { name: 'Home', href: '/', icon: Home},
     { name: 'Claims', href: '/claims', icon: LayoutDashboard },
     { name: 'Narratives', href: '/narratives', icon: FileText },
     { name: 'Sentiments', href: '/sentiment', icon: Gauge },

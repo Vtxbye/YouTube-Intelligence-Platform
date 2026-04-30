@@ -583,31 +583,64 @@ def get_video_detail(video_id: str, comment_limit: int = 50):
     video["comments"] = execute(sql_comments, (video_id, comment_limit), fetch_all=True)
     return video
 
-@app.get("/videos/with-claims", response_model=list[VideoData])
-def get_videos_with_claims(
-    sort: str = "newest",
-    limit: int = 50,
-    offset: int = 0
-):
-
- 
-    if sort == "oldest":
-        order_by = "vd.published_at ASC"
-    elif sort == "most_popular":
-        order_by = "vd.views DESC"
-    else:
-        order_by = "vd.published_at DESC"  
+@app.get("/videos/with-claims")
+def get_videos_with_claims(sort="newest", limit=50, offset=0):
+    order_by = {
+        "oldest": "vd.published_at ASC",
+        "most_popular": "vd.views DESC",
+        "newest": "vd.published_at DESC"
+    }.get(sort, "vd.published_at DESC")
 
     sql = f"""
-        SELECT *
+        SELECT 
+            vd.*,
+            COALESCE(
+                json_agg(
+                    json_build_object(
+                        'claim_id', c.claim_id,
+                        'claim_text', c.claim_text,
+                        'created_at', c.created_at
+                    )
+                ) FILTER (WHERE c.claim_id IS NOT NULL),
+                '[]'
+            ) AS claims
         FROM video_data vd
+        LEFT JOIN claims c ON c.video_id = vd.video_id
         WHERE EXISTS (
-            SELECT 1
-            FROM claims c
-            WHERE c.video_id = vd.video_id
+            SELECT 1 FROM claims c2 WHERE c2.video_id = vd.video_id
         )
+        GROUP BY vd.video_id
         ORDER BY {order_by}
         LIMIT %s OFFSET %s;
     """
 
     return execute(sql, (limit, offset), fetch_all=True)
+
+@app.get("/videos/comment-sentiment")
+def get_all_comment_sentiment():
+    sql = """
+        SELECT
+            v.video_id,
+            v.title,
+            v.channel_name,
+            v.published_at,
+            v.video_url,
+            json_agg(
+                json_build_object(
+                    'comment_id', c.comment_id,
+                    'author', c.author,
+                    'comment_text', c.comment_text,
+                    'sentiment_label', c.sentiment_label,
+                    'sentiment_score', c.sentiment_score,
+                    'sentiment_highlight_tokens', c.sentiment_highlight_tokens
+                )
+            ) AS comments
+        FROM video_data v
+        JOIN comments c ON c.video_id = v.video_id
+        WHERE c.sentiment_label IS NOT NULL
+        GROUP BY v.video_id, v.title, v.channel_name, v.published_at, v.video_url
+        ORDER BY v.published_at DESC;
+    """
+
+    rows = execute(sql, fetch_all=True)
+    return rows

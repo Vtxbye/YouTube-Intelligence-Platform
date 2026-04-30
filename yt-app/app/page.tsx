@@ -18,7 +18,7 @@ export default function LandingPage() {
       <section className="max-w-7xl mx-auto px-6 py-20 text-center">
         <div className="mx-auto max-w-3xl">
           <p className="mb-4 inline-flex items-center rounded-full bg-purple-100 px-4 py-2 text-sm font-medium text-purple-700">
-            Health claims, narratives, and video trends all in one place
+            Health claims, narratives, trends, and video sentiments all in one place
           </p>
 
           <h1 className="text-5xl font-bold tracking-tight text-gray-950">
@@ -54,7 +54,7 @@ export default function LandingPage() {
         <div className="mb-10">
           <h2 className="text-3xl font-bold">What the platform does</h2>
           <p className="mt-2 text-gray-600">
-            A dashboard for exploring health videos, claims, and trends.
+            A dashboard for exploring health videos, sentiments, claims, narratives, and trends.
           </p>
 
           <p className="mt-3 text-gray-600 leading-relaxed">

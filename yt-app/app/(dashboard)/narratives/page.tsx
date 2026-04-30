@@ -15,6 +15,7 @@ import {
 } from "recharts";
 import { useSearch } from "@/app/utils/SearchContext";
 import { highlightText } from "@/app/utils/highlightText";
+import SplitPane from "@/app/components/SplitPane";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -148,161 +149,155 @@ export default function Page() {
   );
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl text-black font-semibold">Narratives</h1>
-        <p className="text-black mt-1">
-          Narrative clusters and their activity over time.
-        </p>
+    <SplitPane
+  initialLeft={520}
+  left={
+    <div className="bg-white rounded-lg border border-gray-200 p-6 h-full">
+      <div className="flex items-center gap-3 mb-6">
+        <TrendingUp className="text-purple-600" />
+        <div>
+          <h2 className="font-semibold text-lg text-black">
+            Narratives
+          </h2>
+          <p className="text-black text-sm">View narratives extracted from clustered groups of claims</p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        {/* LEFT SIDE */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 max-h-[80vh] overflow-y-auto">
-          <div className="flex items-center gap-3 mb-6">
-            <TrendingUp className="text-purple-600" />
-            <div>
-              <h2 className="font-semibold text-lg text-black">
-                Trending Narratives
-              </h2>
-              <p className="text-black text-sm">Narratives with active claims</p>
-            </div>
-          </div>
+      {filteredNarratives.length === 0 && (
+        <p className="text-gray-500">No narratives found</p>
+      )}
 
-          {filteredNarratives.length === 0 && (
-            <p className="text-gray-500">No narratives found</p>
-          )}
-
-          <ul className="space-y-3">
-            {filteredNarratives.map((n) => (
-              <li
-                key={n.narrative_id}
-                className={`transition-colors duration-300 ${
-                  highlighted === n.chart_label ? "bg-yellow-100" : ""
-                }`}
-              >
-                <Link
-                  href={`/narratives/${n.narrative_id}`}
-                  className="block p-3 rounded-lg hover:bg-gray-50"
-                >
-                  <div className="flex items-start gap-3">
-                    <div
-                      className="w-2 h-2 rounded-full mt-2 shrink-0"
-                      style={{ backgroundColor: n.color }}
-                    />
-
-                    <div>
-                      <span className="text-gray-800 font-medium">
-                        {highlightText(n.narrative_text, search)}
-                      </span>
-                      <p className="text-sm text-gray-500 mt-1">
-                        {n.claim_count}{" "}
-                        {n.claim_count === 1 ? "claim" : "claims"}
-                      </p>
-                    </div>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* RIGHT SIDE — GRAPH */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="flex justify-between mb-4">
-            <h3 className="font-semibold text-black">Narratives over time</h3>
-
-            <div className="relative">
-              <button
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="bg-gray-700 text-white px-3 py-1 rounded text-sm"
-              >
-                Select Narratives
-              </button>
-
-              {dropdownOpen && (
-                <div className="absolute right-0 mt-2 bg-white border rounded shadow p-3 space-y-2 z-50 max-h-72 overflow-y-auto min-w-72">
-                  {narratives.map((n) => (
-                    <label
-                      key={n.narrative_id}
-                      className="flex items-center gap-2 text-sm text-gray-900 font-medium hover:bg-gray-100 px-2 py-1 rounded cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedNarratives.includes(n.chart_label)}
-                        onChange={() => toggleNarrative(n.chart_label)}
-                      />
-
-                      <span
-                        className="w-2 h-2 rounded-full inline-block"
-                        style={{ backgroundColor: n.color }}
-                      />
-
-                      <span className="font-semibold">{n.chart_label}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <ResponsiveContainer width="100%" height={340}>
-            <LineChart
-              data={graphData}
-              margin={{ top: 20, right: 30, left: 10, bottom: 40 }}
+      <ul className="space-y-3">
+        {filteredNarratives.map((n) => (
+          <li
+            key={n.narrative_id}
+            className={`transition-colors duration-300 ${
+              highlighted === n.chart_label ? "bg-yellow-100" : ""
+            }`}
+          >
+            <Link
+              href={`/narratives/${n.narrative_id}`}
+              className="block p-3 rounded-lg hover:bg-gray-50"
             >
-              <CartesianGrid strokeDasharray="3 3" />
+              <div className="flex items-start gap-3">
+                <div
+                  className="w-2 h-2 rounded-full mt-2 shrink-0"
+                  style={{ backgroundColor: n.color }}
+                />
 
-              <XAxis
-                dataKey="month"
-                tick={{ fontSize: 12 }}
-                angle={-35}
-                textAnchor="end"
-                height={60}
-              />
+                <div>
+                  <span className="text-gray-800 font-medium">
+                    {highlightText(n.narrative_text, search)}
+                  </span>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {n.claim_count}{" "}
+                    {n.claim_count === 1 ? "claim" : "claims"}
+                  </p>
+                </div>
+              </div>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  }
+  right={
+    <div className="bg-white rounded-lg border border-gray-200 p-6 h-full">
+      <div className="flex justify-between mb-4">
+        <h3 className="font-semibold text-black">Trends over time</h3>
 
-              <YAxis
-                tick={{ fontSize: 12 }}
-                label={{
-                  value: "Claims per Month",
-                  angle: -90,
-                  position: "insideLeft",
-                  style: {
-                    textAnchor: "middle",
-                    fill: "#555",
-                    fontSize: 12,
-                  },
-                }}
-              />
+        <div className="relative">
+          <button
+            onClick={() => setDropdownOpen(!dropdownOpen)}
+            className="bg-gray-700 text-white px-3 py-1 rounded text-sm"
+          >
+            Select Narratives
+          </button>
 
-              <Tooltip formatter={(value, key) => [value, key]} />
-
-              <Legend verticalAlign="top" height={40} />
-
-              {narratives
-                .filter((n) => selectedNarratives.includes(n.chart_label))
-                .map((n) => (
-                  <Line
-                    key={n.narrative_id}
-                    type="monotone"
-                    dataKey={n.chart_label}
-                    stroke={n.color}
-                    strokeWidth={highlighted === n.chart_label ? 4 : 2}
-                    dot={false}
-                    activeDot={{ r: 6 }}
-                    onMouseEnter={() => setHighlighted(n.chart_label)}
-                    onMouseLeave={() => setHighlighted(null)}
-                    onClick={() =>
-                      setHighlighted((prev) =>
-                        prev === n.chart_label ? null : n.chart_label
-                      )
-                    }
+          {dropdownOpen && (
+            <div className="absolute right-0 mt-2 bg-white border rounded shadow p-3 space-y-2 z-50 max-h-72 overflow-y-auto min-w-72">
+              {narratives.map((n) => (
+                <label
+                  key={n.narrative_id}
+                  className="flex items-center gap-2 text-sm text-gray-900 font-medium hover:bg-gray-100 px-2 py-1 rounded cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedNarratives.includes(n.chart_label)}
+                    onChange={() => toggleNarrative(n.chart_label)}
                   />
-                ))}
-            </LineChart>
-          </ResponsiveContainer>
+
+                  <span
+                    className="w-2 h-2 rounded-full inline-block"
+                    style={{ backgroundColor: n.color }}
+                  />
+
+                  <span className="font-semibold">{n.chart_label}</span>
+                </label>
+              ))}
+            </div>
+          )}
         </div>
       </div>
+
+      <ResponsiveContainer width="100%" height={340}>
+        <LineChart
+          data={graphData}
+          margin={{ top: 20, right: 30, left: 10, bottom: 40 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" />
+
+          <XAxis
+            dataKey="month"
+            tick={{ fontSize: 12 }}
+            angle={-35}
+            textAnchor="end"
+            height={60}
+          />
+
+          <YAxis
+            tick={{ fontSize: 12 }}
+            label={{
+              value: "Claims per Month",
+              angle: -90,
+              position: "insideLeft",
+              style: {
+                textAnchor: "middle",
+                fill: "#555",
+                fontSize: 12,
+              },
+            }}
+          />
+
+          <Tooltip formatter={(value, key) => [value, key]} />
+
+          <Legend verticalAlign="top" height={40} />
+
+          {narratives
+            .filter((n) => selectedNarratives.includes(n.chart_label))
+            .map((n) => (
+              <Line
+                key={n.narrative_id}
+                type="monotone"
+                dataKey={n.chart_label}
+                stroke={n.color}
+                strokeWidth={highlighted === n.chart_label ? 4 : 2}
+                dot={false}
+                activeDot={{ r: 6 }}
+                onMouseEnter={() => setHighlighted(n.chart_label)}
+                onMouseLeave={() => setHighlighted(null)}
+                onClick={() =>
+                  setHighlighted((prev) =>
+                    prev === n.chart_label ? null : n.chart_label
+                  )
+                }
+              />
+            ))}
+        </LineChart>
+      </ResponsiveContainer>
     </div>
+  }
+/>
+
   );
 }
