@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { YouTubeEmbed } from "@next/third-parties/google";
 import { useSearch } from "@/app/utils/SearchContext";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 type HighlightToken = {
   token: string;
@@ -34,22 +34,33 @@ type VideoDetail = {
   sentiment_highlight_tokens: HighlightToken[] | null;
 };
 
-function highlightTranscript(text: string | null, tokens: HighlightToken[] | null) {
+function highlightTranscript(
+  text: string | null,
+  tokens: HighlightToken[] | null
+): string {
   if (!text || !tokens) return text ?? "";
+
   let html = text;
-  tokens.forEach((t) => {
+
+  for (const t of tokens) {
+    if (!t.token.trim()) continue;
+
     const color =
       t.polarity === "positive"
         ? "bg-green-200"
         : t.polarity === "negative"
         ? "bg-red-200"
         : "bg-gray-200";
-    const regex = new RegExp(`\\b${t.token}\\b`, "gi");
+
+    const escaped = t.token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(`\\b${escaped}\\b`, "gi");
+
     html = html.replace(
       regex,
       `<span class="${color} px-1 rounded">${t.token}</span>`
     );
-  });
+  }
+
   return html;
 }
 
@@ -58,23 +69,32 @@ function extractSnippets(
   tokens: HighlightToken[] | null,
   radius = 60,
   maxSnippets = 5
-) {
+): string[] {
   if (!transcript || !tokens) return [];
 
   const snippets: string[] = [];
   const used = new Set<number>();
 
   for (const t of tokens) {
-    const regex = new RegExp(`\\b${t.token}\\b`, "gi");
-    let match;
+    if (!t.token.trim()) continue;
+
+    const escaped = t.token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(`\\b${escaped}\\b`, "gi");
+
+    let match: RegExpExecArray | null;
 
     while ((match = regex.exec(transcript)) !== null) {
-      const start = Math.max(0, match.index - radius);
-      const end = Math.min(transcript.length, match.index + t.token.length + radius);
+      const index = match.index;
 
-      if ([...used].some((u) => Math.abs(u - match.index) < radius)) continue;
+      if ([...used].some((u) => Math.abs(u - index) < radius)) continue;
 
-      used.add(match.index);
+      used.add(index);
+
+      const start = Math.max(0, index - radius);
+      const end = Math.min(
+        transcript.length,
+        index + t.token.length + radius
+      );
 
       snippets.push(transcript.slice(start, end).trim());
 
@@ -85,7 +105,7 @@ function extractSnippets(
   return snippets;
 }
 
-function formatScore(label: string | null, score: number | null) {
+function formatScore(label: string | null, score: number | null): string {
   if (score == null) return "N/A";
   const abs = Math.abs(score).toFixed(3);
   return label === "negative" ? `-${abs}` : abs;
@@ -97,17 +117,21 @@ export default function SentimentPage() {
   const [videos, setVideos] = useState<VideoMeta[]>([]);
   const [details, setDetails] = useState<Record<string, VideoDetail>>({});
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "positive" | "negative" | "neutral">("all");
+  const [page, setPage] = useState<number>(1);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [filter, setFilter] = useState<
+    "all" | "positive" | "negative" | "neutral"
+  >("all");
 
-  const search = useSearch();
+  const search = useSearch() ?? "";
 
   useEffect(() => {
     setPage(1);
   }, [filter]);
 
   useEffect(() => {
+    let active = true;
+
     async function load() {
       try {
         setLoading(true);
@@ -116,38 +140,52 @@ export default function SentimentPage() {
         if (!res.ok) throw new Error("Failed to fetch videos");
 
         const data: VideoMeta[] = await res.json();
+        if (!active) return;
 
         const normalized = data.map((v) => ({
           ...v,
           sentiment_label: v.sentiment_label?.toLowerCase() ?? null,
-        }));
+        })).filter((v) => v.sentiment_score !== 0);
 
         setVideos(normalized);
       } catch (err) {
         console.error("Error loading videos:", err);
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     }
 
     load();
+    return () => {
+      active = false;
+    };
   }, []);
 
   const loadDetails = async (videoId: string) => {
     if (details[videoId]) return;
 
-    const res = await fetch(`${API_URL}/videos/${videoId}/sentiment`);
-    const data: VideoDetail = await res.json();
-    data.sentiment_label = data.sentiment_label?.toLowerCase() ?? null;
+    try {
+      const res = await fetch(`${API_URL}/videos/${videoId}/sentiment`);
+      if (!res.ok) throw new Error("Failed to fetch video details");
 
-    setDetails((prev) => ({ ...prev, [videoId]: data }));
+      const data: VideoDetail = await res.json();
+      data.sentiment_label = data.sentiment_label?.toLowerCase() ?? null;
+
+      setDetails((prev) => ({ ...prev, [videoId]: data }));
+    } catch (err) {
+      console.error(`Error loading details for ${videoId}:`, err);
+    }
   };
 
   const toggleExpand = async (videoId: string) => {
-    const newState = !expanded[videoId];
-    setExpanded((prev) => ({ ...prev, [videoId]: newState }));
+    setExpanded((prev) => {
+      const newState = !prev[videoId];
+      return { ...prev, [videoId]: newState };
+    });
 
-    if (newState) await loadDetails(videoId);
+    if (!expanded[videoId]) {
+      await loadDetails(videoId);
+    }
   };
 
   const filteredVideos = videos.filter((v) => {
@@ -156,7 +194,7 @@ export default function SentimentPage() {
     const matchesSearch =
       v.title.toLowerCase().includes(q) ||
       v.channel_name.toLowerCase().includes(q) ||
-      (v.sentiment_label ?? "").toLowerCase().includes(q);
+      (v.sentiment_label ?? "").includes(q);
 
     const matchesFilter =
       filter === "all" ? true : v.sentiment_label === filter;
@@ -165,7 +203,7 @@ export default function SentimentPage() {
   });
 
   const totalFiltered = filteredVideos.length;
-  const totalPages = Math.ceil(totalFiltered / PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(totalFiltered / PAGE_SIZE));
 
   const paginatedVideos = filteredVideos.slice(
     (page - 1) * PAGE_SIZE,
@@ -193,26 +231,26 @@ export default function SentimentPage() {
 
   return (
     <div className="space-y-6">
-
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="mb-6">
           <h1 className="text-2xl font-semibold text-black">Sentiment Analysis</h1>
           <p className="text-black text-sm">
             Showing extracted sentiment from video transcripts.
           </p>
-                  <a
-          href="/sentiment/comment"
-          className="text-blue-600 hover:text-blue-800 text-sm"
-        >
-          View comment sentiment dashboard →
-        </a>
+
+          <a
+            href="/sentiment/comment"
+            className="text-blue-600 hover:text-blue-800 text-sm"
+          >
+            View comment sentiment dashboard →
+          </a>
         </div>
 
         <div className="mt-4 flex gap-3">
-          {["all", "positive", "negative", "neutral"].map((f) => (
+          {(["all", "positive", "negative", "neutral"] as const).map((f) => (
             <button
               key={f}
-              onClick={() => setFilter(f as any)}
+              onClick={() => setFilter(f)}
               className={`px-3 py-1 rounded text-sm border ${
                 filter === f
                   ? "bg-purple-600 text-white border-purple-600"
@@ -233,11 +271,12 @@ export default function SentimentPage() {
         <div className="space-y-8">
           {paginatedVideos.map((video) => {
             const embedVideoId =
-              video.video_url?.split("v=")[1]?.split("&")[0] ||
-              video.video_id;
+              video.video_url?.split("v=")[1]?.split("&")[0] ??
+              video.video_id ??
+              "";
 
             const detail = details[video.video_id];
-            const isOpen = expanded[video.video_id];
+            const isOpen = expanded[video.video_id] ?? false;
 
             return (
               <div
@@ -270,7 +309,7 @@ export default function SentimentPage() {
                   </p>
                 </div>
 
-                {detail && (
+                {detail?.sentiment_summary && (
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-2">
                       Transcript Summary
@@ -293,7 +332,7 @@ export default function SentimentPage() {
                       detail.sentiment_highlight_tokens
                     ).map((snippet, i) => (
                       <p
-                        key={i}
+                        key={`${video.video_id}-snippet-${i}`}
                         className="whitespace-pre-wrap text-gray-800 mb-4"
                         dangerouslySetInnerHTML={{
                           __html: highlightTranscript(
@@ -328,7 +367,7 @@ export default function SentimentPage() {
               </span>
             ) : (
               <button
-                key={item}
+                key={`page-${item}`}
                 onClick={() => setPage(item as number)}
                 className={`px-3 py-2 rounded text-sm ${
                   page === item

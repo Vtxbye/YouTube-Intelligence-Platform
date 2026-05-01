@@ -7,13 +7,18 @@ import { useSearch } from "@/app/utils/SearchContext";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+type HighlightToken = {
+  token: string;
+  polarity: "positive" | "negative" | "neutral";
+};
+
 type Comment = {
   comment_id: number;
   author: string;
   comment_text: string;
   sentiment_label: string | null;
   sentiment_score: number | null;
-  sentiment_highlight_tokens: any;
+  sentiment_highlight_tokens: HighlightToken[] | null;
 };
 
 type VideoWithComments = {
@@ -36,15 +41,15 @@ export default function CommentSentimentDashboard() {
       try {
         setLoading(true);
         const res = await fetch(`${API_URL}/videos/comment-sentiment`);
-        const data = await res.json();
+        const data: VideoWithComments[] = await res.json();
 
         const normalized = data.map((v: VideoWithComments) => ({
           ...v,
           comments: v.comments.map((c) => ({
             ...c,
             sentiment_label: c.sentiment_label?.toLowerCase() ?? null,
-          })),
-        }));
+          })).filter((c) => c.sentiment_score !== 0),
+        })).filter((v) => v.comments.length > 0)
 
         setVideos(normalized);
       } finally {
