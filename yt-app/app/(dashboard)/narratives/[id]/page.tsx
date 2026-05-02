@@ -11,7 +11,6 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 type NarrativeClaimVideoRow = {
   narrative_id: number;
   narrative_text: string;
-  claim_count: number;
 
   claim_id: number;
   claim_text: string;
@@ -98,6 +97,9 @@ export default function NarrativeDetailPage() {
     return Array.from(map.values());
   }, [rows]);
 
+  const totalClaims = rows.length;
+  const totalVideos = groupedVideos.length;
+
   function formatDuration(seconds: number | null) {
     if (!seconds) return 'Unknown duration';
     const mins = Math.floor(seconds / 60);
@@ -114,22 +116,22 @@ export default function NarrativeDetailPage() {
   }
 
   if (!rows.length) {
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-4">
-        <Link
-          href="/narratives"
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          <span>Back to Narratives</span>
-        </Link>
-      </div>
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-4">
+          <Link
+            href="/narratives"
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span>Back to Narratives</span>
+          </Link>
+        </div>
 
-      <div className="text-gray-600">No data found for this narrative.</div>
-    </div>
-  );
-}
+        <div className="text-gray-600">No data found for this narrative.</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -147,8 +149,10 @@ export default function NarrativeDetailPage() {
         <h1 className="text-2xl font-semibold text-gray-900">
           {narrativeTitle}
         </h1>
+
         <p className="text-gray-600 mt-1">
-          Videos and claims associated with this narrative
+          {totalClaims.toLocaleString()} claim{totalClaims !== 1 ? 's' : ''} •{' '}
+          {totalVideos.toLocaleString()} video{totalVideos !== 1 ? 's' : ''}
         </p>
       </div>
 
@@ -173,6 +177,10 @@ export default function NarrativeDetailPage() {
                 {(video.views ?? 0).toLocaleString()} views •{' '}
                 {formatDuration(video.duration_seconds)}
               </p>
+
+              <p className="text-sm text-gray-700 mt-1 font-medium">
+                {video.claims.length} claim{video.claims.length !== 1 ? 's' : ''}
+              </p>
             </div>
 
             <div>
@@ -185,8 +193,16 @@ export default function NarrativeDetailPage() {
               </ul>
 
               {video.claims.length > 2 && (
-                <details className="mt-2 group">
-                  <summary className="cursor-pointer list-none inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800">
+                <details className="mt-3 group">
+                  <div className="pt-2">
+                    <ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">
+                      {video.claims.slice(2).map((claim, idx) => (
+                        <li key={idx}>{claim}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <summary className="mt-3 cursor-pointer list-none flex justify-center items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800">
                     <span className="group-open:hidden">
                       Show {video.claims.length - 2} more claim(s)
                     </span>
@@ -199,12 +215,6 @@ export default function NarrativeDetailPage() {
                       ⌄
                     </span>
                   </summary>
-
-                  <ul className="list-disc pl-5 pt-2 text-sm text-gray-700 space-y-1">
-                    {video.claims.slice(2).map((claim, idx) => (
-                      <li key={idx}>{claim}</li>
-                    ))}
-                  </ul>
                 </details>
               )}
             </div>

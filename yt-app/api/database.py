@@ -8,16 +8,29 @@ load_dotenv(find_dotenv())
 
 POSTGRES_URL = os.getenv("POSTGRES_URL")
 
-pool = SimpleConnectionPool(
-  minconn=1,
-  maxconn=10,
-  dsn=POSTGRES_URL
-)
+pool = None
+
+def get_pool():
+  global pool
+
+  if pool is None:
+    if not POSTGRES_URL:
+      raise RuntimeError("POSTGRES_URL is not configured")
+
+    pool = SimpleConnectionPool(
+      minconn=1,
+      maxconn=10,
+      dsn=POSTGRES_URL
+    )
+
+  return pool
 
 def execute(query, params=None, fetch_one=False, fetch_all=False):
   conn = None
+  db_pool = get_pool()
+
   try:
-    conn = pool.getconn()
+    conn = db_pool.getconn()
     cur = conn.cursor(cursor_factory=RealDictCursor)
 
     cur.execute(query, params or ())
@@ -39,7 +52,7 @@ def execute(query, params=None, fetch_one=False, fetch_all=False):
 
   finally:
     if conn:
-      pool.putconn(conn)
+      db_pool.putconn(conn)
 
 def create_tables(path):
   with open(path, "r") as file:

@@ -18,5 +18,6 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.POSTGRES_URL }}
         run: |
-          psql "$DATABASE_URL" -c "REFRESH MATERIALIZED VIEW CONCURRENTLY narrative_claim_video_view;"
-          psql "$DATABASE_URL" -c "REFRESH MATERIALIZED VIEW CONCURRENTLY narrative_trends_view;"
+          psql "$DATABASE_URL" -c "REFRESH MATERIALIZED VIEW narrative_claim_video_view;"
+          psql "$DATABASE_URL" -c "REFRESH MATERIALIZED VIEW narrative_trends_view;"
+          psql "$DATABASE_URL" -c "REFRESH MATERIALIZED VIEW narrative_video_trends_view;"

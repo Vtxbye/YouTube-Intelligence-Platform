@@ -35,7 +35,7 @@ export default function TopicPage() {
 
     async function fetchVideos() {
       try {
-        const res = await fetch('https://youtube-intelligence-platform-api.onrender.com/videos');
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/videos`);
         if (!res.ok) {
           throw new Error('Failed to fetch videos');
         }
@@ -97,7 +97,7 @@ export default function TopicPage() {
                   width={350}
                 />
               ) : (
-                <div className="h-[200px] flex items-center justify-center bg-gray-100 rounded">
+                <div className="h-50 flex items-center justify-center bg-gray-100 rounded">
                   <span className="text-sm text-gray-500">Video unavailable</span>
                 </div>
               )}

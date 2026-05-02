@@ -1,10 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { ArrowLeft } from "lucide-react";
+
+import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/app/auth/firebase";
+import { FirebaseError } from "firebase/app";
 
 import {
   CardTitle,
@@ -14,12 +17,14 @@ import {
   CardFooter,
   Card,
 } from "@/app/components/ui/card";
-
 import { Label } from "@/app/components/ui/label";
 import { Input } from "@/app/components/ui/input";
 import { Button } from "@/app/components/ui/button";
 
 const styles = {
+  wrapper: "w-full max-w-md",
+  backButton:
+    "mb-6 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors",
   container: "w-full max-w-md",
   header: "space-y-1",
   title: "text-3xl font-bold text-gray-900",
@@ -34,11 +39,17 @@ const styles = {
 
 export function SigninForm() {
   const router = useRouter();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (user) => {
+      if (user) router.replace("/");
+    });
+    return () => unsub();
+  }, [router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -47,75 +58,87 @@ export function SigninForm() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      router.replace("/"); 
-    } catch (err: any) {
-      setError(err.message || "Failed to sign in");
+      router.replace("/claims");
+    } catch (err) {
+      if (err instanceof FirebaseError) {
+        setError(err.message);
+      } else {
+        setError("Failed to sign in");
+      }
     } finally {
       setLoading(false);
     }
   }
 
+  const handleBack = () => {
+    if (window.history.length > 1) router.back();
+    else router.push("/");
+  };
+
   return (
-    <div className={styles.container}>
-      <form onSubmit={handleSubmit}>
-        <Card className="bg-white border border-gray-200 shadow-sm">
-          <CardHeader className={styles.header}>
-            <CardTitle className={styles.title}>Sign In</CardTitle>
-            <CardDescription className={styles.description}>
-              Enter your details to sign in to your account
-            </CardDescription>
-          </CardHeader>
+    <div className={styles.wrapper}>
+      <button type="button" onClick={handleBack} className={styles.backButton}>
+        <ArrowLeft className="w-5 h-5" />
+        <span>Back</span>
+      </button>
 
-          <CardContent className={styles.content}>
-            {error && (
-              <p className="text-red-600 text-sm mb-2">{error}</p>
-            )}
+      <div className={styles.container}>
+        <form onSubmit={handleSubmit}>
+          <Card className="bg-white border border-gray-200 shadow-sm">
+            <CardHeader className={styles.header}>
+              <CardTitle className={styles.title}>Sign In</CardTitle>
+              <CardDescription className={styles.description}>
+                Enter your details to sign in to your account
+              </CardDescription>
+            </CardHeader>
 
-            <div className={styles.fieldGroup}>
-              <Label className="text-gray-700" htmlFor="email">
-                Email
-              </Label>
-              <Input
-                id="identifier"
-                name="identifier"
-                type="email"
-                placeholder="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
-              />
-            </div>
+            <CardContent className={styles.content}>
+              {error && <p className="text-red-600 text-sm mb-2">{error}</p>}
 
-            <div className={styles.fieldGroup}>
-              <Label className="text-gray-700" htmlFor="password">
-                Password
-              </Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
-              />
-            </div>
-          </CardContent>
+              <div className={styles.fieldGroup}>
+                <Label className="text-gray-700" htmlFor="email">
+                  Email
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
+                />
+              </div>
 
-          <CardFooter className={styles.footer}>
-            <Button className={styles.button} disabled={loading}>
-              {loading ? "Signing in..." : "Sign In"}
-            </Button>
-          </CardFooter>
-        </Card>
+              <div className={styles.fieldGroup}>
+                <Label className="text-gray-700" htmlFor="password">
+                  Password
+                </Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
+                />
+              </div>
+            </CardContent>
 
-        <div className={styles.prompt}>
-          Don&apos;t have an account?
-          <Link className={styles.link} href="/signup">
-            Sign Up
-          </Link>
-        </div>
-      </form>
+            <CardFooter className={styles.footer}>
+              <Button className={styles.button} disabled={loading}>
+                {loading ? "Signing in..." : "Sign In"}
+              </Button>
+            </CardFooter>
+          </Card>
+
+          <div className={styles.prompt}>
+            Don&apos;t have an account?
+            <Link className={styles.link} href="/signup">
+              Sign Up
+            </Link>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
